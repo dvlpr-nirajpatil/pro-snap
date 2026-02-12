@@ -4,12 +4,16 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/features/auth/controllers/auth_controller.dart';
 import 'package:prosnap/features/auth/views/sign_up_screen.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  LoginScreen({super.key});
 
   Widget verticalSpace(double height) => SizedBox(height: height.h);
+
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -50,22 +54,44 @@ class LoginScreen extends StatelessWidget {
               verticalSpace(60),
 
               /// Email Field
-              _buildInputField(hint: "Email", obscure: false),
+              _buildInputField(
+                hint: "Email",
+                obscure: false,
+                controller: email,
+              ),
 
               verticalSpace(20),
 
               /// Password Field
-              _buildInputField(hint: "Password", obscure: true),
+              _buildInputField(
+                hint: "Password",
+                obscure: true,
+                controller: password,
+              ),
 
               verticalSpace(40),
 
               /// Login Button
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("LOGIN"),
-                ),
+                child: Obx(() {
+                  final controller = Get.find<AuthController>();
+                  return ElevatedButton(
+                    onPressed:
+                        controller.signUpLoading.value
+                            ? null
+                            : () {
+                              controller.signIn(
+                                email: email.text,
+                                password: password.text,
+                              );
+                            },
+                    child:
+                        controller.signUpLoading.value
+                            ? ButtonLoader()
+                            : Text("LOGIN"),
+                  );
+                }),
               ),
 
               const Spacer(),
@@ -107,8 +133,13 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInputField({required String hint, required bool obscure}) {
+  Widget _buildInputField({
+    required String hint,
+    required bool obscure,
+    controller,
+  }) {
     return TextFormField(
+      controller: controller,
       obscureText: obscure,
       style: TextStyle(
         fontFamily: Fonts.medium,

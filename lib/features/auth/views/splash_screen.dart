@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/features/auth/controllers/auth_controller.dart';
 import 'package:prosnap/features/auth/views/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -32,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 3), () {
-      Get.off(() => LoginScreen());
+      Get.find<AuthController>().handleAppOpen();
     });
   }
 

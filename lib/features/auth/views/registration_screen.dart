@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/features/auth/controllers/auth_controller.dart';
+import 'package:prosnap/features/auth/views/sign_up_screen.dart';
 import 'package:prosnap/features/navbar/views/home_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -14,8 +15,24 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
+  final AuthController controller = Get.find<AuthController>();
+
+  final TextEditingController userName = TextEditingController();
+  final TextEditingController dob = TextEditingController();
+  final TextEditingController fullName = TextEditingController();
+  final TextEditingController bio = TextEditingController();
+  final GlobalKey<FormState> formKey = GlobalKey();
+
   String? selectedGender;
   DateTime? selectedDate;
+
+  get birthDate {
+    String day = selectedDate!.day.toString().padLeft(2, "0");
+    String month = selectedDate!.month.toString().padLeft(2, "0");
+    String year = selectedDate!.year.toString().padLeft(4, "0");
+
+    return "$day/$month/$year";
+  }
 
   Widget verticalSpace(double height) => SizedBox(height: height.h);
 
@@ -26,93 +43,137 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 28.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              verticalSpace(40),
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                verticalSpace(40),
 
-              /// Logo
-              Text(
-                "PRO SNAP",
-                style: TextStyle(
-                  fontFamily: Fonts.bold,
-                  fontSize: 28.sp,
-                  letterSpacing: 6,
-                  color: Colours.white,
-                ),
-              ),
-
-              verticalSpace(10),
-
-              Text(
-                "Complete Profile",
-                style: TextStyle(
-                  fontFamily: Fonts.light,
-                  fontSize: 14.sp,
-                  letterSpacing: 1.5,
-                  color: Colours.white.withOpacity(0.7),
-                ),
-              ),
-
-              verticalSpace(40),
-
-              /// Profile Image
-              GestureDetector(
-                onTap: () {
-                  // open image picker
-                },
-                child: Container(
-                  height: 110.h,
-                  width: 110.h,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colours.white, width: 1),
+                /// Logo
+                Text(
+                  "PRO SNAP",
+                  style: TextStyle(
+                    fontFamily: Fonts.bold,
+                    fontSize: 28.sp,
+                    letterSpacing: 6,
+                    color: Colours.white,
                   ),
-                  child: Icon(
-                    Icons.add_a_photo_outlined,
+                ),
+
+                verticalSpace(10),
+
+                Text(
+                  "Complete Profile",
+                  style: TextStyle(
+                    fontFamily: Fonts.light,
+                    fontSize: 14.sp,
+                    letterSpacing: 1.5,
                     color: Colours.white.withOpacity(0.7),
-                    size: 28.sp,
                   ),
                 ),
-              ),
 
-              verticalSpace(40),
+                verticalSpace(40),
 
-              _buildInputField("Username"),
-              verticalSpace(18),
-
-              _buildInputField("Full Name"),
-              verticalSpace(18),
-
-              _buildGenderDropdown(),
-              verticalSpace(18),
-
-              _buildDobField(context),
-              verticalSpace(18),
-
-              _buildBioField(),
-              verticalSpace(40),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Get.offAll(() => MainNavScreen());
+                /// Profile Image
+                GestureDetector(
+                  onTap: () {
+                    // open image picker
                   },
-                  child: const Text("CONTINUE"),
+                  child: Container(
+                    height: 110.h,
+                    width: 110.h,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colours.white, width: 1),
+                    ),
+                    child: Icon(
+                      Icons.add_a_photo_outlined,
+                      color: Colours.white.withOpacity(0.7),
+                      size: 28.sp,
+                    ),
+                  ),
                 ),
-              ),
 
-              verticalSpace(30),
-            ],
+                verticalSpace(40),
+
+                _buildInputField(
+                  "Username",
+                  controller: userName,
+                  isRequired: true,
+                ),
+                verticalSpace(18),
+
+                _buildInputField(
+                  "Full Name",
+                  controller: fullName,
+                  isRequired: true,
+                ),
+                verticalSpace(18),
+
+                _buildGenderDropdown(),
+                verticalSpace(18),
+
+                _buildInputField("DOB", controller: dob, isRequired: true),
+                verticalSpace(18),
+
+                _buildBioField(bio),
+                verticalSpace(40),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: Obx(
+                    () => ElevatedButton(
+                      onPressed:
+                          controller.signUpLoading.value
+                              ? null
+                              : () {
+                                if (formKey.currentState!.validate()) {
+                                  controller
+                                      .saveUserDetails(
+                                        name: fullName.text,
+                                        userName: userName.text,
+                                        gender: selectedGender ?? "",
+                                        dob: dob.text,
+                                        bio: bio.text,
+                                      )
+                                      .then((e) {
+                                        if (e) {
+                                          Get.offAll(() => MainNavScreen());
+                                        }
+                                      });
+                                }
+                              },
+                      child:
+                          controller.signUpLoading.value
+                              ? ButtonLoader()
+                              : Text("CONTINUE"),
+                    ),
+                  ),
+                ),
+
+                verticalSpace(30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInputField(String hint) {
+  Widget _buildInputField(String hint, {isRequired = false, controller}) {
     return TextFormField(
+      controller: controller,
+      validator:
+          isRequired
+              ? (value) {
+                if (value == null || value == "") {
+                  return "Required !";
+                }
+                return null;
+              }
+              : null,
+
       style: TextStyle(
         fontFamily: Fonts.medium,
         fontSize: 14.sp,
@@ -123,8 +184,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  Widget _buildBioField() {
+  Widget _buildBioField(controller) {
     return TextFormField(
+      controller: controller,
       maxLines: 3,
       style: TextStyle(
         fontFamily: Fonts.medium,

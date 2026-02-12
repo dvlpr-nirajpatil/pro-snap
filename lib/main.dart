@@ -5,8 +5,13 @@ import 'package:prosnap/core/router/router.dart';
 import 'package:prosnap/core/router/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:prosnap/core/services/current_user.dart';
+import 'package:prosnap/core/services/local_db.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocalDb().init();
+  CurrentUser().init();
   runApp(MealsDB());
 }
 
