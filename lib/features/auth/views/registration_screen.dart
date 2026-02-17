@@ -3,9 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/core/router/routes.dart';
 import 'package:prosnap/features/auth/controllers/auth_controller.dart';
 import 'package:prosnap/features/auth/views/sign_up_screen.dart';
-import 'package:prosnap/features/navbar/views/home_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -139,7 +139,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                       )
                                       .then((e) {
                                         if (e) {
-                                          Get.offAll(() => MainNavScreen());
+                                          Get.offAllNamed(Routes.homeScreen);
                                         }
                                       });
                                 }

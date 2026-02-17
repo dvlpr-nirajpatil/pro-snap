@@ -18,12 +18,12 @@ class MainNavScreen extends StatefulWidget {
 class _MainNavScreenState extends State<MainNavScreen> {
   int currentIndex = 0;
 
-  final List<Widget> screens = const [
+  final List<Widget> screens = [
     HomeScreen(),
-    SearchScreen(),
-    SizedBox(), // Placeholder for Create Post
-    ChatScreen(),
-    ProfileScreen(),
+    const SearchScreen(),
+    const SizedBox(), // Placeholder for Create Post
+    const ChatScreen(),
+    const ProfileScreen(),
   ];
 
   @override

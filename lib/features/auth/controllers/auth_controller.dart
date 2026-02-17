@@ -1,11 +1,11 @@
 import 'package:get/get.dart';
 import 'package:prosnap/core/network/api_exception.dart';
+import 'package:prosnap/core/router/routes.dart';
 import 'package:prosnap/core/services/current_user.dart';
 import 'package:prosnap/core/services/tokens.dart';
 import 'package:prosnap/features/auth/repository/auth_repository.dart';
 import 'package:prosnap/features/auth/views/login_screen.dart';
 import 'package:prosnap/features/auth/views/registration_screen.dart';
-import 'package:prosnap/features/navbar/views/home_screen.dart';
 
 class AuthController extends GetxController {
   final AuthRepository repository = AuthRepository();
@@ -21,12 +21,14 @@ class AuthController extends GetxController {
         await repository.refreshToken();
         await repository.getCurrentUserDetails();
         if (CurrentUser().registration) {
-          Get.offAll(() => MainNavScreen());
+          Get.offAllNamed(Routes.homeScreen);
         } else {
           Get.offAll(() => ProfileSetupScreen());
         }
       }
     } catch (e) {
+      CurrentUser().delete();
+      Tokens.clear();
       Get.offAll(() => LoginScreen());
     }
   }
@@ -56,7 +58,7 @@ class AuthController extends GetxController {
       await repository.signIn(email: email, password: password);
 
       if (CurrentUser().registration) {
-        Get.offAll(() => MainNavScreen());
+        Get.offAllNamed(Routes.homeScreen);
       } else {
         Get.offAll(() => ProfileSetupScreen());
       }
