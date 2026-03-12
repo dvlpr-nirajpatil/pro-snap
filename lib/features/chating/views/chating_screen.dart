@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get_utils/src/extensions/export.dart';
+import 'package:get/instance_manager.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/core/services/current_user.dart';
+import 'package:prosnap/features/chating/controllers/chat_controller.dart';
+import 'package:prosnap/features/chating/models/message_model.dart';
 
-class ConversationScreen extends StatelessWidget {
-  const ConversationScreen({super.key});
+class ChatingScreen extends StatelessWidget {
+  const ChatingScreen({super.key});
 
   Widget verticalSpace(double h) => SizedBox(height: h.h);
   Widget horizontalSpace(double w) => SizedBox(width: w.w);
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(ChatController());
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
@@ -24,20 +31,22 @@ class ConversationScreen extends StatelessWidget {
 
             /// 💬 Messages
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
-                children: const [
-                  _MessageBubble(
-                    message: "Hey, love your latest post.",
-                    isMe: false,
+              child: Obx(() {
+                final List<MessageModel> messages = controller.messages;
+                return ListView.builder(
+                  reverse: true,
+                  itemCount: messages.length,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 20.h,
                   ),
-                  _MessageBubble(message: "Thank you 🤍", isMe: true),
-                  _MessageBubble(
-                    message: "Let’s collaborate soon.",
-                    isMe: false,
-                  ),
-                ],
-              ),
+                  itemBuilder:
+                      (context, index) => _MessageBubble(
+                        message: messages[index].text ?? "",
+                        isMe: messages[index].sender == CurrentUser().id,
+                      ),
+                );
+              }),
             ),
 
             /// ✍ Input Area
@@ -50,6 +59,7 @@ class ConversationScreen extends StatelessWidget {
 
   /// ---------------- TOP BAR ----------------
   Widget _buildTopBar(BuildContext context) {
+    final controller = Get.find<ChatController>();
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       child: Row(
@@ -67,31 +77,53 @@ class ConversationScreen extends StatelessWidget {
           horizontalSpace(12),
 
           /// Avatar
-          CircleAvatar(radius: 20.r, backgroundColor: Colours.divider),
+          Obx(() {
+            final profilePicture =
+                controller.chatDetails.value?.opponent?.profilePicture;
+            final String? name = controller.chatDetails.value?.opponent?.name;
+            return CircleAvatar(
+              radius: 20.r,
+              backgroundColor: Colours.divider,
+              backgroundImage:
+                  profilePicture != null ? NetworkImage(profilePicture) : null,
+              child:
+                  profilePicture == null
+                      ? Text(name?[0].toUpperCase() ?? "S")
+                      : null,
+            );
+          }),
 
           horizontalSpace(12),
 
           /// Name + Status
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "pro_user",
-                style: TextStyle(
-                  fontFamily: Fonts.semiBold,
-                  fontSize: 14.sp,
-                  color: Colours.white,
+          Obx(
+            () => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  controller
+                          .chatDetails
+                          .value
+                          ?.opponent
+                          ?.name
+                          ?.capitalizeFirst ??
+                      "No Name",
+                  style: TextStyle(
+                    fontFamily: Fonts.semiBold,
+                    fontSize: 14.sp,
+                    color: Colours.white,
+                  ),
                 ),
-              ),
-              Text(
-                "Online",
-                style: TextStyle(
-                  fontFamily: Fonts.light,
-                  fontSize: 11.sp,
-                  color: Colours.white.withOpacity(0.6),
+                Text(
+                  "Online",
+                  style: TextStyle(
+                    fontFamily: Fonts.light,
+                    fontSize: 11.sp,
+                    color: Colours.white.withValues(alpha: 0.6),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           const Spacer(),
@@ -132,6 +164,7 @@ class ConversationScreen extends StatelessWidget {
 
   /// ---------------- INPUT AREA ----------------
   Widget _buildInputArea() {
+    final controller = Get.find<ChatController>();
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
@@ -142,7 +175,7 @@ class ConversationScreen extends StatelessWidget {
           /// Attachment
           Icon(
             Icons.attach_file,
-            color: Colours.white.withOpacity(0.7),
+            color: Colours.white.withValues(alpha: 0.7),
             size: 22.sp,
           ),
 
@@ -157,6 +190,8 @@ class ConversationScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(25),
               ),
               child: TextField(
+                controller: controller.messageController,
+                onSubmitted: (_) => controller.sendMessage(),
                 cursorColor: Colours.white,
                 style: TextStyle(
                   fontFamily: Fonts.medium,
@@ -179,17 +214,36 @@ class ConversationScreen extends StatelessWidget {
           horizontalSpace(10),
 
           /// Send
-          Container(
-            height: 40.h,
-            width: 40.h,
-            decoration: const BoxDecoration(
-              color: Colours.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.arrow_upward,
-              size: 18.sp,
-              color: Colours.primary,
+          Obx(
+            () => GestureDetector(
+              onTap: controller.isSending.value ? null : controller.sendMessage,
+              child: Container(
+                height: 40.h,
+                width: 40.h,
+                decoration: BoxDecoration(
+                  color:
+                      controller.isSending.value
+                          ? Colours.white.withValues(alpha: 0.7)
+                          : Colours.white,
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    controller.isSending.value
+                        ? Padding(
+                          padding: EdgeInsets.all(10.w),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colours.primary,
+                            ),
+                          ),
+                        )
+                        : Icon(
+                          Icons.arrow_upward,
+                          size: 18.sp,
+                          color: Colours.primary,
+                        ),
+              ),
             ),
           ),
         ],

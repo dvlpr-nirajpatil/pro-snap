@@ -10,7 +10,7 @@ class LocationRepository {
 
   LocationRepository() {
     dio = Dio();
-    dio.interceptors.addAll([LoggerInterceptor(), ErrorInterceptor()]);
+    dio.interceptors.addAll([LoggerInterceptor(), ErrorInterceptor(Dio())]);
   }
 
   Future<LocationAddress> getLocationAddress({

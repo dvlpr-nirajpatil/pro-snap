@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/features/auth/views/sign_up_screen.dart';
+import 'package:prosnap/features/conversations/controllers/conversation_controller.dart';
 import 'package:prosnap/features/profile_details/controllers/profile_details_controller.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -129,23 +131,37 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               /// EDIT PROFILE BUTTON
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colours.white),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: Obx(() {
+                  final ConversationController convoController =
+                      Get.find<ConversationController>();
+                  return OutlinedButton(
+                    onPressed:
+                        convoController.isLoading.value
+                            ? null
+                            : () {
+                              convoController.createConversation(
+                                userId: controller.details.value!.id!,
+                              );
+                            },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colours.white),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    "Send Message",
-                    style: TextStyle(
-                      fontFamily: Fonts.medium,
-                      color: Colours.white,
-                      fontSize: 13.sp,
-                    ),
-                  ),
-                ),
+                    child:
+                        convoController.isLoading.value
+                            ? ButtonLoader()
+                            : Text(
+                              "Send Message",
+                              style: TextStyle(
+                                fontFamily: Fonts.medium,
+                                color: Colours.white,
+                                fontSize: 13.sp,
+                              ),
+                            ),
+                  );
+                }),
               ),
 
               verticalSpace(24),

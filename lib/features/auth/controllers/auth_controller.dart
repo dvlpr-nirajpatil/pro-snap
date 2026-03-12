@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:prosnap/core/network/api_exception.dart';
 import 'package:prosnap/core/router/routes.dart';
 import 'package:prosnap/core/services/current_user.dart';
+import 'package:prosnap/core/services/socket_service.dart';
 import 'package:prosnap/core/services/tokens.dart';
 import 'package:prosnap/features/auth/repository/auth_repository.dart';
 import 'package:prosnap/features/auth/views/login_screen.dart';
@@ -9,6 +10,7 @@ import 'package:prosnap/features/auth/views/registration_screen.dart';
 
 class AuthController extends GetxController {
   final AuthRepository repository = AuthRepository();
+  final SocketService socket = Get.find<SocketService>();
 
   RxBool signUpLoading = false.obs;
 
@@ -20,6 +22,7 @@ class AuthController extends GetxController {
       } else {
         await repository.refreshToken();
         await repository.getCurrentUserDetails();
+        socket.connect(Tokens.accessToken);
         if (CurrentUser().registration) {
           Get.offAllNamed(Routes.homeScreen);
         } else {
@@ -37,6 +40,7 @@ class AuthController extends GetxController {
     signUpLoading.value = true;
     try {
       await repository.signUp(email: email, password: password);
+      socket.connect(Tokens.accessToken);
       signUpLoading.value = false;
       return true;
     } catch (e) {
@@ -56,6 +60,7 @@ class AuthController extends GetxController {
     signUpLoading.value = true;
     try {
       await repository.signIn(email: email, password: password);
+      socket.connect(Tokens.accessToken);
 
       if (CurrentUser().registration) {
         Get.offAllNamed(Routes.homeScreen);
@@ -110,6 +115,7 @@ class AuthController extends GetxController {
     signUpLoading.value = true;
     try {
       await repository.signOut();
+      socket.disconnect();
       Get.offAll(() => LoginScreen());
     } catch (e) {
       if (e is ApiException) {

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/features/auth/controllers/auth_controller.dart';
 import 'package:prosnap/features/manage_profile/views/manage_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -13,6 +14,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.find<AuthController>();
+
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
@@ -93,28 +96,61 @@ class ProfileScreen extends StatelessWidget {
                     /// Manage Profile Button
                     SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Get.to(() => ManageProfileScreen());
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: Colours.white,
-                            width: 0.8,
+                      child: Column(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () {
+                              Get.to(() => ManageProfileScreen());
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: Colours.white,
+                                width: 0.8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: Text(
+                              "Manage Profile",
+                              style: TextStyle(
+                                fontFamily: Fonts.medium,
+                                fontSize: 13.sp,
+                                letterSpacing: 1,
+                                color: Colours.white,
+                              ),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                          SizedBox(height: 12.h),
+                          Obx(
+                            () => OutlinedButton(
+                              onPressed:
+                                  authController.signUpLoading.value
+                                      ? null
+                                      : authController.signOut,
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Colours.white,
+                                  width: 0.8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              child: Text(
+                                authController.signUpLoading.value
+                                    ? "Signing Out..."
+                                    : "Sign Out",
+                                style: TextStyle(
+                                  fontFamily: Fonts.medium,
+                                  fontSize: 13.sp,
+                                  letterSpacing: 1,
+                                  color: Colours.white,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          "Manage Profile",
-                          style: TextStyle(
-                            fontFamily: Fonts.medium,
-                            fontSize: 13.sp,
-                            letterSpacing: 1,
-                            color: Colours.white,
-                          ),
-                        ),
+                        ],
                       ),
                     ),
 

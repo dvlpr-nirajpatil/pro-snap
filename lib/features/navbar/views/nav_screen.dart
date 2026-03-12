@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
-import 'package:prosnap/features/chat/views/chat_screen.dart';
+import 'package:prosnap/features/conversations/views/conversations.dart';
 import 'package:prosnap/features/create_post/viwes/create_post_screen.dart';
 import 'package:prosnap/features/home/views/home_screen.dart';
 import 'package:prosnap/features/profile/views/profile_screen.dart';
@@ -22,7 +22,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
     HomeScreen(),
     const SearchScreen(),
     const SizedBox(), // Placeholder for Create Post
-    const ChatScreen(),
+    const ConversationsScreen(),
     const ProfileScreen(),
   ];
 

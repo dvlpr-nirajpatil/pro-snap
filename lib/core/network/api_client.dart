@@ -9,7 +9,7 @@ class ApiClient {
   ApiClient() {
     dio = Dio(
       BaseOptions(
-        baseUrl: "http://localhost:4000/api/v1",
+        baseUrl: "https://inordinately-serous-maryann.ngrok-free.dev/api/v1",
         connectTimeout: const Duration(seconds: 200),
         receiveTimeout: const Duration(seconds: 200),
         headers: {"Content-Type": "application/json"},
@@ -19,7 +19,7 @@ class ApiClient {
     dio.interceptors.addAll([
       LoggerInterceptor(),
       AuthInterceptor(),
-      ErrorInterceptor(),
+      ErrorInterceptor(dio),
     ]);
   }
 }

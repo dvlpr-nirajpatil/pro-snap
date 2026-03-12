@@ -4,16 +4,19 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/features/conversation/views/conversation_screen.dart';
+import 'package:prosnap/features/chating/views/chating_screen.dart';
+import 'package:prosnap/features/conversations/controllers/conversation_controller.dart';
+import 'package:prosnap/features/conversations/models/conversation_model.dart';
 
-class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+class ConversationsScreen extends StatelessWidget {
+  const ConversationsScreen({super.key});
 
   Widget verticalSpace(double h) => SizedBox(height: h.h);
   Widget horizontalSpace(double w) => SizedBox(width: w.w);
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<ConversationController>();
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
@@ -78,15 +81,20 @@ class ChatScreen extends StatelessWidget {
 
             /// Chat List
             Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                itemCount: 10,
-                separatorBuilder:
-                    (_, __) => Divider(color: Colours.divider, thickness: 0.5),
-                itemBuilder: (context, index) {
-                  return _buildChatTile(index);
-                },
-              ),
+              child: Obx(() {
+                final List<ConversationModel> conversations =
+                    controller.conversations;
+                return ListView.separated(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  itemCount: conversations.length,
+                  separatorBuilder:
+                      (_, __) =>
+                          Divider(color: Colours.divider, thickness: 0.5),
+                  itemBuilder: (context, index) {
+                    return _buildChatTile(conversations[index]);
+                  },
+                );
+              }),
             ),
           ],
         ),
@@ -94,17 +102,28 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChatTile(int index) {
+  Widget _buildChatTile(ConversationModel conversation) {
+    final profilePicture = conversation.opponent?.profilePicture;
+    final name = conversation.opponent?.name;
     return InkWell(
       onTap: () {
-        Get.to(() => ConversationScreen());
+        Get.to(() => ChatingScreen(), arguments: conversation.id);
       },
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 14.h),
         child: Row(
           children: [
             /// Profile Image
-            CircleAvatar(radius: 26.r, backgroundColor: Colours.divider),
+            CircleAvatar(
+              radius: 26.r,
+              backgroundColor: Colours.divider,
+              backgroundImage:
+                  profilePicture != null ? NetworkImage(profilePicture) : null,
+              child:
+                  profilePicture == null
+                      ? Text(name?[0].toUpperCase() ?? "N")
+                      : null,
+            ),
 
             horizontalSpace(14),
 
@@ -114,7 +133,7 @@ class ChatScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "user_$index",
+                    conversation.opponent?.name ?? "No Name",
                     style: TextStyle(
                       fontFamily: Fonts.semiBold,
                       fontSize: 14.sp,
@@ -123,7 +142,7 @@ class ChatScreen extends StatelessWidget {
                   ),
                   verticalSpace(6),
                   Text(
-                    "Last message preview goes here...",
+                    conversation.lastMessage?.text ?? "No Message",
                     style: TextStyle(
                       fontFamily: Fonts.light,
                       fontSize: 12.sp,
