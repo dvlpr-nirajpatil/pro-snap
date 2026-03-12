@@ -35,9 +35,12 @@ dependencies:
     sdk: flutter
   flutter_screenutil: ^5.9.3
   flutter_secure_storage: ^10.0.0
+  geolocator: ^14.0.2
   get: ^4.7.3
+  google_maps_flutter: ^2.14.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  image_picker: ^1.2.1
   logger: ^2.6.2
   shimmer: ^3.0.0
 
@@ -58,6 +61,7 @@ flutter:
   assets:
     - assets/
     - assets/images/
+    - assets/map_style_dark.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

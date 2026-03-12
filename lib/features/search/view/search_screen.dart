@@ -1,7 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/features/profile_details/views/profile_details_screen.dart';
+import 'package:prosnap/features/search/controllers/search_controller.dart';
+import 'package:prosnap/features/search/models/search_user.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -13,6 +18,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   bool isSearching = false;
+  final SearchUsersController controller = Get.find<SearchUsersController>();
 
   Widget verticalSpace(double h) => SizedBox(height: h.h);
   Widget horizontalSpace(double w) => SizedBox(width: w.w);
@@ -44,9 +50,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     color: Colours.white,
                   ),
                   onChanged: (value) {
-                    setState(() {
-                      isSearching = value.isNotEmpty;
-                    });
+                    controller.searchQuery.value = value;
                   },
                   decoration: InputDecoration(
                     hintText: "Search people, posts, #hashtags",
@@ -68,8 +72,13 @@ class _SearchScreenState extends State<SearchScreen> {
             verticalSpace(20),
 
             /// Body
-            Expanded(
-              child: isSearching ? _buildSearchResults() : _buildExploreGrid(),
+            Obx(
+              () => Expanded(
+                child:
+                    controller.searchQuery.value != ""
+                        ? _buildSearchResults()
+                        : _buildExploreGrid(),
+              ),
             ),
           ],
         ),
@@ -80,15 +89,21 @@ class _SearchScreenState extends State<SearchScreen> {
   /// ---------------- EXPLORE GRID ----------------
   Widget _buildExploreGrid() {
     return GridView.builder(
+      controller: controller.searchFeedScrollController,
       padding: EdgeInsets.symmetric(horizontal: 2.w),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 2.w,
         mainAxisSpacing: 2.w,
       ),
-      itemCount: 60,
+      itemCount: controller.feedPosts.length,
       itemBuilder: (context, index) {
-        return Container(color: Colours.divider);
+        return Container(
+          child: Image.network(
+            controller.feedPosts[index].media!.first.url!,
+            fit: BoxFit.cover,
+          ),
+        );
       },
     );
   }
@@ -100,30 +115,9 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         _sectionTitle("People"),
         verticalSpace(10),
-        ...List.generate(3, (index) => _buildUserResult(index)),
-
-        verticalSpace(25),
-
-        _sectionTitle("Hashtags"),
-        verticalSpace(10),
-        ...List.generate(3, (index) => _buildHashtagResult(index)),
-
-        verticalSpace(25),
-
-        _sectionTitle("Posts"),
-        verticalSpace(10),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 2.w,
-            mainAxisSpacing: 2.w,
-          ),
-          itemCount: 6,
-          itemBuilder: (context, index) {
-            return Container(color: Colours.divider);
-          },
+        ...List.generate(
+          controller.searchResult.length,
+          (index) => _buildUserResult(controller.searchResult[index]),
         ),
       ],
     );
@@ -140,35 +134,50 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildUserResult(int index) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 12.h),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 22.r, backgroundColor: Colours.divider),
-          horizontalSpace(12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "user_$index",
-                style: TextStyle(
-                  fontFamily: Fonts.medium,
-                  fontSize: 14.sp,
-                  color: Colours.white,
+  Widget _buildUserResult(SearchUser user) {
+    return GestureDetector(
+      onTap: () {
+        Get.to(() => ProfileDetailsScreen(userId: user.id!));
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22.r,
+              backgroundColor: Colours.divider,
+              child:
+                  user.profilePicture == null
+                      ? Text(user.name?[0].toUpperCase() ?? "U")
+                      : CachedNetworkImage(
+                        imageUrl: user.profilePicture,
+                        fit: BoxFit.cover,
+                      ),
+            ),
+            horizontalSpace(12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.userName!,
+                  style: TextStyle(
+                    fontFamily: Fonts.medium,
+                    fontSize: 14.sp,
+                    color: Colours.white,
+                  ),
                 ),
-              ),
-              Text(
-                "Full Name $index",
-                style: TextStyle(
-                  fontFamily: Fonts.light,
-                  fontSize: 12.sp,
-                  color: Colours.grey,
+                Text(
+                  user.name!,
+                  style: TextStyle(
+                    fontFamily: Fonts.light,
+                    fontSize: 12.sp,
+                    color: Colours.grey,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

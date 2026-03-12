@@ -71,7 +71,7 @@ class _PostWidgetState extends State<PostWidget>
               CircleAvatar(
                 radius: 18.r,
                 backgroundImage: CachedNetworkImageProvider(
-                  post.userId!.profilePicture!,
+                  post.userId?.profilePicture ?? "Na",
                 ),
               ),
               SizedBox(width: 12.w),
@@ -79,7 +79,7 @@ class _PostWidgetState extends State<PostWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    post.userId!.userName!,
+                    post.userId?.userName ?? "No Name",
                     style: TextStyle(
                       fontFamily: Fonts.semiBold,
                       fontSize: 13.sp,
