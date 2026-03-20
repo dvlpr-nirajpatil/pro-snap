@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569634144817",
+    "project_id": "prosnap-c3e70",
+    "storage_bucket": "prosnap-c3e70.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569634144817:android:c585036da5ee68e5a14b10",
+        "android_client_info": {
+          "package_name": "com.example.prosnap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAe0u9GE_xz-SVEPlMH-j-axGR-1c5q_ck"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -11,6 +11,7 @@ class GetRoutes {
       name: Routes.homeScreen,
       page: () => MainNavScreen(),
       binding: HomeBindings(),
+      middlewares: [],
     ),
   ];
 }

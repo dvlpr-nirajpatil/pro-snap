@@ -5,6 +5,7 @@ import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
 import 'package:prosnap/features/auth/controllers/auth_controller.dart';
 import 'package:prosnap/features/manage_profile/views/manage_profile_screen.dart';
+import 'package:prosnap/features/profile/views/verified_subscription_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -87,9 +88,13 @@ class ProfileScreen extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: Fonts.light,
                         fontSize: 13.sp,
-                        color: Colours.white.withOpacity(0.8),
+                        color: Colours.white.withValues(alpha: 0.8),
                       ),
                     ),
+
+                    verticalSpace(20),
+
+                    _buildVerifiedCard(),
 
                     verticalSpace(20),
 
@@ -202,10 +207,124 @@ class ProfileScreen extends StatelessWidget {
           style: TextStyle(
             fontFamily: Fonts.light,
             fontSize: 12.sp,
-            color: Colours.white.withOpacity(0.7),
+            color: Colours.white.withValues(alpha: 0.7),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVerifiedCard() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.r),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF111827), Color(0xFF0F3D91)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colours.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                height: 42.h,
+                width: 42.h,
+                decoration: BoxDecoration(
+                  color: Colours.white.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.verified_rounded,
+                  color: Colours.white,
+                  size: 22.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Get Verified",
+                      style: TextStyle(
+                        fontFamily: Fonts.bold,
+                        fontSize: 16.sp,
+                        color: Colours.white,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      "Buy a verified tick to boost trust and profile visibility.",
+                      style: TextStyle(
+                        fontFamily: Fonts.light,
+                        fontSize: 12.sp,
+                        color: Colours.white.withValues(alpha: 0.78),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          verticalSpace(16),
+          Row(
+            children: [
+              _buildVerifiedPill("Blue badge"),
+              horizontalSpace(8),
+              _buildVerifiedPill("Priority support"),
+            ],
+          ),
+          verticalSpace(16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Get.to(() => const VerifiedSubscriptionScreen());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colours.white,
+                foregroundColor: Colours.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              child: Text(
+                "See Plans",
+                style: TextStyle(
+                  fontFamily: Fonts.semiBold,
+                  fontSize: 13.sp,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerifiedPill(String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: Colours.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(30.r),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: Fonts.medium,
+          fontSize: 11.sp,
+          color: Colours.white,
+        ),
+      ),
     );
   }
 }

@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:get/instance_manager.dart';
+import 'package:prosnap/core/global/globals.dart';
 import 'package:prosnap/core/network/api_client.dart';
 import 'package:prosnap/core/services/current_user.dart';
+import 'package:prosnap/core/services/notification_service.dart';
 import 'package:prosnap/core/services/tokens.dart';
 
 class AuthRepository {
@@ -29,6 +31,11 @@ class AuthRepository {
         CurrentUser().save(userDetails),
         Tokens.save(accessToken: accessToken, refreshToken: refreshToken),
       ]);
+      final fcmToken = NotificationService.fcmToken;
+
+      if (fcmToken != null) {
+        storeFcmToken();
+      }
     } on DioException catch (e) {
       throw e.error as Exception;
     }
@@ -56,6 +63,12 @@ class AuthRepository {
         CurrentUser().save(userDetails),
         Tokens.save(accessToken: accessToken, refreshToken: refreshToken),
       ]);
+
+      final fcmToken = NotificationService.fcmToken;
+
+      if (fcmToken != null) {
+        storeFcmToken();
+      }
     } on DioException catch (e) {
       throw e.error as Exception;
     }
@@ -73,6 +86,12 @@ class AuthRepository {
       final accessToken = response.data['data']['accessToken'];
       final refreshToken = response.data['data']['refreshToken'];
       await Tokens.save(accessToken: accessToken, refreshToken: refreshToken);
+
+      final fcmToken = NotificationService.fcmToken;
+
+      if (fcmToken != null) {
+        storeFcmToken();
+      }
     } on DioException catch (e) {
       throw e.error as Exception;
     }
@@ -123,6 +142,17 @@ class AuthRepository {
       await CurrentUser().delete();
     } on DioException catch (e) {
       throw e.error as Exception;
+    }
+  }
+
+  storeFcmToken() async {
+    try {
+      final payload = {"fcmToken": NotificationService.fcmToken};
+      await apiClient.dio.post("/auth/fcm-token", data: payload);
+    } on DioException catch (e) {
+      throw e.error as Exception;
+    } catch (e) {
+      rethrow;
     }
   }
 }
