@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart' hide Response;
 import 'package:prosnap/core/network/api_client.dart';
+import 'package:prosnap/core/services/app_services.dart';
 
 class ConversationRepository {
-  final ApiClient apiClient = Get.find<ApiClient>();
+  final ApiClient apiClient = AppServices.apiClient;
 
   createConversation({required String receiverId}) async {
     try {

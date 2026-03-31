@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:get/instance_manager.dart';
-import 'package:prosnap/core/global/globals.dart';
 import 'package:prosnap/core/network/api_client.dart';
+import 'package:prosnap/core/services/app_services.dart';
 import 'package:prosnap/core/services/current_user.dart';
 import 'package:prosnap/core/services/notification_service.dart';
 import 'package:prosnap/core/services/tokens.dart';
+import 'package:prosnap/locator.dart';
 
 class AuthRepository {
-  final ApiClient apiClient = Get.find<ApiClient>();
+  final ApiClient apiClient = sl.get<ApiClient>();
 
   signUp({required String email, required String password}) async {
     try {

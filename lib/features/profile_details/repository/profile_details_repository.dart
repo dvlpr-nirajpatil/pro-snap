@@ -1,12 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/get_instance.dart';
 import 'package:prosnap/core/global/globals.dart';
 import 'package:prosnap/core/network/api_client.dart';
+import 'package:prosnap/core/services/app_services.dart';
 import 'package:prosnap/features/profile_details/models/profile_details.dart';
 
 class ProfileDetailsRepository {
-  final ApiClient apiClient = Get.find<ApiClient>();
+  final ApiClient apiClient = AppServices.apiClient;
 
   getProfileDetails(userId) async {
     try {

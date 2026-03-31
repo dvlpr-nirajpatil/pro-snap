@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:get/instance_manager.dart';
 import 'package:prosnap/core/network/api_client.dart';
+import 'package:prosnap/core/services/app_services.dart';
 import 'package:prosnap/features/chating/models/chat_details_model.dart';
 
 class ChatRepository {
-  final ApiClient apiClient = Get.find<ApiClient>();
+  final ApiClient apiClient = AppServices.apiClient;
 
   getMessages(conversationId) async {
     try {

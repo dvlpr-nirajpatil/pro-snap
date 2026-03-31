@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:get/state_manager.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
-class SocketService extends GetxService {
+class SocketService {
   late IO.Socket socket;
 
   bool isConnected = false;
 
-  final String baseUrl = "https://inordinately-serous-maryann.ngrok-free.dev";
+  final String baseUrl = 'https://inordinately-serous-maryann.ngrok-free.dev';
 
   void connect(token) {
     socket = IO.io(
@@ -31,21 +30,21 @@ class SocketService extends GetxService {
   void _registerListeners() {
     socket.onConnect((_) {
       isConnected = true;
-      debugPrint('🟢 Connected');
+      debugPrint('Connected');
     });
 
     socket.onDisconnect((reason) {
       isConnected = false;
-      debugPrint('🔴 Disconnected: $reason');
+      debugPrint('Disconnected: $reason');
     });
 
     socket.onConnectError((err) {
       isConnected = false;
-      debugPrint('❌ Connect error: $err');
+      debugPrint('Connect error: $err');
     });
 
     socket.onReconnect((_) {
-      debugPrint('🔁 Reconnected');
+      debugPrint('Reconnected');
     });
   }
 
@@ -61,7 +60,7 @@ class SocketService extends GetxService {
     isConnected = false;
   }
 
-  void listenEvent(String eventName, onData) {
+  void listenEvent(String eventName, dynamic Function(dynamic) onData) {
     socket.on(eventName, (data) {
       onData(data);
     });

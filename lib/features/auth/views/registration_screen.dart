@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/core/router/routes.dart';
-import 'package:prosnap/features/auth/controllers/auth_controller.dart';
-import 'package:prosnap/features/auth/views/sign_up_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -15,8 +11,6 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-  final AuthController controller = Get.find<AuthController>();
-
   final TextEditingController userName = TextEditingController();
   final TextEditingController dob = TextEditingController();
   final TextEditingController fullName = TextEditingController();
@@ -26,12 +20,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   String? selectedGender;
   DateTime? selectedDate;
 
-  get birthDate {
-    String day = selectedDate!.day.toString().padLeft(2, "0");
-    String month = selectedDate!.month.toString().padLeft(2, "0");
-    String year = selectedDate!.year.toString().padLeft(4, "0");
-
-    return "$day/$month/$year";
+  String get birthDate {
+    final String day = selectedDate!.day.toString().padLeft(2, '0');
+    final String month = selectedDate!.month.toString().padLeft(2, '0');
+    final String year = selectedDate!.year.toString().padLeft(4, '0');
+    return '$day/$month/$year';
   }
 
   Widget verticalSpace(double height) => SizedBox(height: height.h);
@@ -49,10 +42,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 verticalSpace(40),
-
-                /// Logo
                 Text(
-                  "PRO SNAP",
+                  'PRO SNAP',
                   style: TextStyle(
                     fontFamily: Fonts.bold,
                     fontSize: 28.sp,
@@ -60,11 +51,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     color: Colours.white,
                   ),
                 ),
-
                 verticalSpace(10),
-
                 Text(
-                  "Complete Profile",
+                  'Complete Profile',
                   style: TextStyle(
                     fontFamily: Fonts.light,
                     fontSize: 14.sp,
@@ -72,14 +61,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     color: Colours.white.withOpacity(0.7),
                   ),
                 ),
-
                 verticalSpace(40),
-
-                /// Profile Image
                 GestureDetector(
-                  onTap: () {
-                    // open image picker
-                  },
+                  onTap: () {},
                   child: Container(
                     height: 110.h,
                     width: 110.h,
@@ -94,64 +78,34 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                   ),
                 ),
-
                 verticalSpace(40),
-
                 _buildInputField(
-                  "Username",
+                  'Username',
                   controller: userName,
                   isRequired: true,
                 ),
                 verticalSpace(18),
-
                 _buildInputField(
-                  "Full Name",
+                  'Full Name',
                   controller: fullName,
                   isRequired: true,
                 ),
                 verticalSpace(18),
-
                 _buildGenderDropdown(),
                 verticalSpace(18),
-
-                _buildInputField("DOB", controller: dob, isRequired: true),
+                _buildDobField(context),
                 verticalSpace(18),
-
                 _buildBioField(bio),
                 verticalSpace(40),
-
                 SizedBox(
                   width: double.infinity,
-                  child: Obx(
-                    () => ElevatedButton(
-                      onPressed:
-                          controller.signUpLoading.value
-                              ? null
-                              : () {
-                                if (formKey.currentState!.validate()) {
-                                  controller
-                                      .saveUserDetails(
-                                        name: fullName.text,
-                                        userName: userName.text,
-                                        gender: selectedGender ?? "",
-                                        dob: dob.text,
-                                        bio: bio.text,
-                                      )
-                                      .then((e) {
-                                        if (e) {
-                                          Get.offAllNamed(Routes.homeScreen);
-                                        }
-                                      });
-                                }
-                              },
-                      child:
-                          controller.signUpLoading.value
-                              ? ButtonLoader()
-                              : Text("CONTINUE"),
-                    ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {}
+                    },
+                    child: const Text('CONTINUE'),
                   ),
                 ),
-
                 verticalSpace(30),
               ],
             ),
@@ -161,19 +115,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  Widget _buildInputField(String hint, {isRequired = false, controller}) {
+  Widget _buildInputField(
+    String hint, {
+    bool isRequired = false,
+    required TextEditingController controller,
+  }) {
     return TextFormField(
       controller: controller,
       validator:
           isRequired
               ? (value) {
-                if (value == null || value == "") {
-                  return "Required !";
+                if (value == null || value.isEmpty) {
+                  return 'Required !';
                 }
                 return null;
               }
               : null,
-
       style: TextStyle(
         fontFamily: Fonts.medium,
         fontSize: 14.sp,
@@ -184,7 +141,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  Widget _buildBioField(controller) {
+  Widget _buildBioField(TextEditingController controller) {
     return TextFormField(
       controller: controller,
       maxLines: 3,
@@ -194,7 +151,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         color: Colours.white,
       ),
       cursorColor: Colours.white,
-      decoration: _inputDecoration("Bio"),
+      decoration: _inputDecoration('Bio'),
     );
   }
 
@@ -203,9 +160,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       dropdownColor: Colours.primary,
       value: selectedGender,
       style: TextStyle(fontFamily: Fonts.medium, color: Colours.white),
-      decoration: _inputDecoration("Gender"),
+      decoration: _inputDecoration('Gender'),
       items:
-          ["Male", "Female", "Other"]
+          ['Male', 'Female', 'Other']
               .map(
                 (gender) =>
                     DropdownMenuItem(value: gender, child: Text(gender)),
@@ -220,9 +177,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Widget _buildDobField(BuildContext context) {
-    return GestureDetector(
+    return TextFormField(
+      controller: dob,
+      readOnly: true,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Required !';
+        }
+        return null;
+      },
       onTap: () async {
-        DateTime? picked = await showDatePicker(
+        final DateTime? picked = await showDatePicker(
           context: context,
           initialDate: DateTime(2000),
           firstDate: DateTime(1950),
@@ -245,23 +210,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         if (picked != null) {
           setState(() {
             selectedDate = picked;
+            dob.text = birthDate;
           });
         }
       },
-      child: AbsorbPointer(
-        child: TextFormField(
-          style: TextStyle(
-            fontFamily: Fonts.medium,
-            fontSize: 14.sp,
-            color: Colours.white,
-          ),
-          decoration: _inputDecoration(
-            selectedDate == null
-                ? "Date of Birth"
-                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-          ),
-        ),
+      style: TextStyle(
+        fontFamily: Fonts.medium,
+        fontSize: 14.sp,
+        color: Colours.white,
       ),
+      cursorColor: Colours.white,
+      decoration: _inputDecoration('DOB'),
     );
   }
 
@@ -277,6 +236,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: const BorderSide(color: Colours.white, width: 1),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 0.8),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1),
       ),
     );
   }

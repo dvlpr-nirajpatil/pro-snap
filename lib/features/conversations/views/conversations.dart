@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
 import 'package:prosnap/features/chating/views/chating_screen.dart';
-import 'package:prosnap/features/conversations/controllers/conversation_controller.dart';
 import 'package:prosnap/features/conversations/models/conversation_model.dart';
 
 class ConversationsScreen extends StatelessWidget {
@@ -16,21 +13,20 @@ class ConversationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<ConversationController>();
+    final List<ConversationModel> conversations = [];
+
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
         child: Column(
           children: [
             verticalSpace(20),
-
-            /// Title
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Messages",
+                  'Messages',
                   style: TextStyle(
                     fontFamily: Fonts.bold,
                     fontSize: 22.sp,
@@ -40,10 +36,7 @@ class ConversationsScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             verticalSpace(20),
-
-            /// Search Bar
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Container(
@@ -60,7 +53,7 @@ class ConversationsScreen extends StatelessWidget {
                     color: Colours.white,
                   ),
                   decoration: InputDecoration(
-                    hintText: "Search conversations",
+                    hintText: 'Search conversations',
                     hintStyle: TextStyle(
                       fontFamily: Fonts.light,
                       color: Colours.grey,
@@ -76,25 +69,28 @@ class ConversationsScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             verticalSpace(20),
-
-            /// Chat List
             Expanded(
-              child: Obx(() {
-                final List<ConversationModel> conversations =
-                    controller.conversations;
-                return ListView.separated(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  itemCount: conversations.length,
-                  separatorBuilder:
-                      (_, __) =>
-                          Divider(color: Colours.divider, thickness: 0.5),
-                  itemBuilder: (context, index) {
-                    return _buildChatTile(conversations[index]);
-                  },
-                );
-              }),
+              child: conversations.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Conversation state is now static.',
+                        style: TextStyle(
+                          fontFamily: Fonts.light,
+                          fontSize: 14.sp,
+                          color: Colours.white.withOpacity(0.7),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      itemCount: conversations.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(color: Colours.divider, thickness: 0.5),
+                      itemBuilder: (context, index) {
+                        return _buildChatTile(context, conversations[index]);
+                      },
+                    ),
             ),
           ],
         ),
@@ -102,38 +98,36 @@ class ConversationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChatTile(ConversationModel conversation) {
+  Widget _buildChatTile(BuildContext context, ConversationModel conversation) {
     final profilePicture = conversation.opponent?.profilePicture;
     final name = conversation.opponent?.name;
     return InkWell(
       onTap: () {
-        Get.to(() => ChatingScreen(), arguments: conversation.id);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatingScreen(conversationId: conversation.id),
+          ),
+        );
       },
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 14.h),
         child: Row(
           children: [
-            /// Profile Image
             CircleAvatar(
               radius: 26.r,
               backgroundColor: Colours.divider,
               backgroundImage:
                   profilePicture != null ? NetworkImage(profilePicture) : null,
-              child:
-                  profilePicture == null
-                      ? Text(name?[0].toUpperCase() ?? "N")
-                      : null,
+              child: profilePicture == null ? Text(name?[0].toUpperCase() ?? 'N') : null,
             ),
-
             horizontalSpace(14),
-
-            /// Name + Message
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    conversation.opponent?.name ?? "No Name",
+                    conversation.opponent?.name ?? 'No Name',
                     style: TextStyle(
                       fontFamily: Fonts.semiBold,
                       fontSize: 14.sp,
@@ -142,7 +136,7 @@ class ConversationsScreen extends StatelessWidget {
                   ),
                   verticalSpace(6),
                   Text(
-                    conversation.lastMessage?.text ?? "No Message",
+                    conversation.lastMessage?.text ?? 'No Message',
                     style: TextStyle(
                       fontFamily: Fonts.light,
                       fontSize: 12.sp,
@@ -153,13 +147,11 @@ class ConversationsScreen extends StatelessWidget {
                 ],
               ),
             ),
-
-            /// Time
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  "2:45 PM",
+                  '2:45 PM',
                   style: TextStyle(
                     fontFamily: Fonts.light,
                     fontSize: 11.sp,
@@ -168,8 +160,6 @@ class ConversationsScreen extends StatelessWidget {
                   ),
                 ),
                 verticalSpace(6),
-
-                /// Unread Dot (optional)
                 Container(
                   height: 6.h,
                   width: 6.h,

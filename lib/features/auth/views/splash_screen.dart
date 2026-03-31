@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/features/auth/controllers/auth_controller.dart';
-import 'package:prosnap/features/auth/views/login_screen.dart';
+import 'package:prosnap/features/auth/bloc/auth_bloc.dart';
+import 'package:prosnap/features/auth/bloc/auth_event.dart';
+import 'package:prosnap/features/auth/bloc/auth_state.dart';
+
+import 'package:prosnap/router/router.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,11 +31,10 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 1), () {
-      Get.find<AuthController>().handleAppOpen();
+      context.read<AuthBloc>().add(HandleAppOpenEvent());
     });
   }
 
@@ -44,58 +45,61 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget verticalSpace(double height) => SizedBox(height: height.h);
-  Widget horizontalSpace(double width) => SizedBox(width: width.w);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colours.primary,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              verticalSpace(200),
-
-              /// App Name
-              Text(
-                "PRO SNAP",
-                style: TextStyle(
-                  fontFamily: Fonts.bold,
-                  fontSize: 36.sp,
-                  letterSpacing: 6,
-                  color: Colors.white,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is NavigateToHomeState) {
+          goRouter.goNamed(Routes.homeScreen);
+        }
+        if (state is NavigateToLoginState) {
+          goRouter.goNamed(Routes.loginScreen);
+        }
+        if (state is NavigateToRegistrationState) {
+          goRouter.goNamed(Routes.profileSetupScreen);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colours.primary,
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                verticalSpace(200),
+                Text(
+                  'PRO SNAP',
+                  style: TextStyle(
+                    fontFamily: Fonts.bold,
+                    fontSize: 36.sp,
+                    letterSpacing: 6,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-
-              verticalSpace(16),
-
-              /// Tagline
-              Text(
-                "Capture Silence",
-                style: TextStyle(
-                  fontFamily: Fonts.light,
-                  fontSize: 14.sp,
-                  letterSpacing: 2,
-                  color: Colors.white.withOpacity(0.7),
+                verticalSpace(16),
+                Text(
+                  'Capture Silence',
+                  style: TextStyle(
+                    fontFamily: Fonts.light,
+                    fontSize: 14.sp,
+                    letterSpacing: 2,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
                 ),
-              ),
-
-              const Spacer(),
-
-              /// Footer
-              Text(
-                "© 2026 Pro Snap",
-                style: TextStyle(
-                  fontFamily: Fonts.light,
-                  fontSize: 12.sp,
-                  color: Colors.white.withOpacity(0.4),
+                const Spacer(),
+                Text(
+                  '© 2026 Pro Snap',
+                  style: TextStyle(
+                    fontFamily: Fonts.light,
+                    fontSize: 12.sp,
+                    color: Colors.white.withOpacity(0.4),
+                  ),
                 ),
-              ),
-
-              verticalSpace(40),
-            ],
+                verticalSpace(40),
+              ],
+            ),
           ),
         ),
       ),

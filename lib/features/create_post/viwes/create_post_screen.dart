@@ -1,10 +1,9 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/features/create_post/controllers/create_post_controller.dart';
 import 'package:prosnap/features/location_picker/views/pick_location_screen.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -19,15 +18,29 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget horizontalSpace(double w) => SizedBox(width: w.w);
 
   final TextEditingController captionField = TextEditingController();
-
-  late final CreatePostController controller;
-
   final GlobalKey<FormState> formKey = GlobalKey();
+  final List<String> imageUrls = [];
+  String selectedLocation = 'India';
 
-  @override
-  void initState() {
-    super.initState();
-    controller = Get.put(CreatePostController());
+  void _pickImage() {}
+
+  void _sharePost() {
+    if (formKey.currentState!.validate()) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const PickLocationScreen()),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        selectedLocation = result;
+      });
+    }
   }
 
   @override
@@ -51,7 +64,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: Text(
-                            "Cancel",
+                            'Cancel',
                             style: TextStyle(
                               fontFamily: Fonts.medium,
                               fontSize: 14.sp,
@@ -61,7 +74,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ),
                         const Spacer(),
                         Text(
-                          "Create Post",
+                          'Create Post',
                           style: TextStyle(
                             fontFamily: Fonts.bold,
                             fontSize: 16.sp,
@@ -71,13 +84,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ),
                         const Spacer(),
                         GestureDetector(
-                          onTap: () {
-                            if (formKey.currentState!.validate()) {
-                              controller.sharePost(caption: captionField.text);
-                            }
-                          },
+                          onTap: _sharePost,
                           child: Text(
-                            "Share",
+                            'Share',
                             style: TextStyle(
                               fontFamily: Fonts.semiBold,
                               fontSize: 14.sp,
@@ -88,9 +97,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       ],
                     ),
                   ),
-
-                  Divider(color: Colours.divider, thickness: 0.5),
-
+                  const Divider(color: Colours.divider, thickness: 0.5),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -98,140 +105,104 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           verticalSpace(25),
-
                           FormField(
                             validator: (value) {
-                              if (controller.imageUrl.isEmpty) {
-                                return "Required !";
+                              if (imageUrls.isEmpty) {
+                                return 'Required !';
                               }
+                              return null;
                             },
-                            builder:
-                                (field) => Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (field.hasError) ...[
-                                      Text(field.errorText.toString()),
-                                      12.verticalSpace,
-                                    ],
-                                    Obx(
-                                      () =>
-                                          controller.imageUrl.isEmpty
-                                              ? GestureDetector(
-                                                onTap: () {
-                                                  controller.pickImage();
-                                                },
-                                                child: Container(
-                                                  height: 320.h,
-                                                  width: double.infinity,
-                                                  decoration: BoxDecoration(
-                                                    color: Colours.divider,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Icon(
-                                                      Icons
-                                                          .add_photo_alternate_outlined,
-                                                      size: 40.sp,
-                                                      color: Colours.white
-                                                          .withOpacity(0.6),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                              : SizedBox(
-                                                height: 250,
-                                                child: GridView(
-                                                  gridDelegate:
-                                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                                        crossAxisCount: 3,
-                                                        mainAxisSpacing: 10,
-                                                        crossAxisSpacing: 10,
-                                                        mainAxisExtent: 120,
+                            builder: (field) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (field.hasError) ...[
+                                  Text(field.errorText.toString()),
+                                  verticalSpace(12),
+                                ],
+                                imageUrls.isEmpty
+                                    ? GestureDetector(
+                                        onTap: _pickImage,
+                                        child: Container(
+                                          height: 320.h,
+                                          width: double.infinity,
+                                          decoration: BoxDecoration(
+                                            color: Colours.divider,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.add_photo_alternate_outlined,
+                                              size: 40.sp,
+                                              color: Colours.white
+                                                  .withOpacity(0.6),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : SizedBox(
+                                        height: 250,
+                                        child: GridView(
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 3,
+                                            mainAxisSpacing: 10,
+                                            crossAxisSpacing: 10,
+                                            mainAxisExtent: 120,
+                                          ),
+                                          children: List.generate(
+                                            imageUrls.length < 6
+                                                ? imageUrls.length + 1
+                                                : imageUrls.length,
+                                            (index) => index == imageUrls.length
+                                                ? GestureDetector(
+                                                    onTap: _pickImage,
+                                                    child: Container(
+                                                      color: Colors.white,
+                                                      child: const Icon(
+                                                        Icons.add,
+                                                        color: Colors.black,
                                                       ),
-                                                  children: List.generate(
-                                                    controller.imageUrl.length <
-                                                            6
-                                                        ? controller
-                                                                .imageUrl
-                                                                .length +
-                                                            1
-                                                        : controller
-                                                            .imageUrl
-                                                            .length,
-                                                    (index) =>
-                                                        index ==
-                                                                controller
-                                                                    .imageUrl
-                                                                    .length
-                                                            ? GestureDetector(
-                                                              onTap: () {
-                                                                controller
-                                                                    .pickImage();
-                                                              },
-                                                              child: Container(
-                                                                color:
-                                                                    Colors
-                                                                        .white,
-                                                                child: Icon(
-                                                                  Icons.add,
-                                                                  color:
-                                                                      Colors
-                                                                          .black,
-                                                                ),
-                                                              ),
-                                                            )
-                                                            : Stack(
-                                                              children: [
-                                                                Positioned.fill(
-                                                                  child: Image.file(
-                                                                    File(
-                                                                      controller
-                                                                          .imageUrl[index],
-                                                                    ),
-                                                                    fit:
-                                                                        BoxFit
-                                                                            .cover,
-                                                                  ),
-                                                                ),
-                                                                IconButton.filled(
-                                                                  onPressed: () {
-                                                                    controller
-                                                                        .imageUrl
-                                                                        .removeAt(
-                                                                          index,
-                                                                        );
-                                                                  },
-                                                                  icon: Icon(
-                                                                    Icons.close,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
+                                                    ),
+                                                  )
+                                                : Stack(
+                                                    children: [
+                                                      Positioned.fill(
+                                                        child: Image.file(
+                                                          File(imageUrls[index]),
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+                                                      IconButton.filled(
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            imageUrls.removeAt(
+                                                              index,
+                                                            );
+                                                          });
+                                                        },
+                                                        icon: const Icon(
+                                                          Icons.close,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ),
-                                              ),
-                                    ),
-                                  ],
-                                ),
+                                          ),
+                                        ),
+                                      ),
+                              ],
+                            ),
                           ),
-
                           verticalSpace(35),
-
-                          /// Caption
                           Text(
-                            "Caption",
+                            'Caption',
                             style: TextStyle(
                               fontFamily: Fonts.semiBold,
                               fontSize: 14.sp,
                               color: Colours.white,
                             ),
                           ),
-
                           verticalSpace(12),
-
                           TextField(
                             controller: captionField,
                             maxLines: 4,
@@ -242,7 +213,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               color: Colours.white,
                             ),
                             decoration: InputDecoration(
-                              hintText: "Write something minimal...",
+                              hintText: 'Write something minimal...',
                               hintStyle: TextStyle(
                                 fontFamily: Fonts.light,
                                 color: Colours.grey,
@@ -261,94 +232,61 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                   width: 1,
                                 ),
                               ),
-                              contentPadding: EdgeInsets.all(16.w),
                             ),
                           ),
-
                           verticalSpace(30),
-
-                          Obx(
-                            () =>
-                                controller.address.value != null
-                                    ? Row(
-                                      children: [
-                                        Icon(Icons.location_on),
-                                        10.horizontalSpace,
-                                        Text(
-                                          controller
-                                              .address
-                                              .value
-                                              ?.formatAddresss,
-                                        ),
-                                      ],
-                                    )
-                                    : _buildOptionTile(
-                                      Icons.location_on_outlined,
-                                      "Add Location",
-                                      () async {
-                                        Get.to(() => PickLocationScreen());
-                                      },
-                                    ),
+                          Text(
+                            'Location',
+                            style: TextStyle(
+                              fontFamily: Fonts.semiBold,
+                              fontSize: 14.sp,
+                              color: Colours.white,
+                            ),
                           ),
-
-                          verticalSpace(15),
-
-                          verticalSpace(40),
+                          verticalSpace(12),
+                          GestureDetector(
+                            onTap: _openLocationPicker,
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 16.h,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colours.white,
+                                  width: 0.6,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    color: Colours.white,
+                                  ),
+                                  horizontalSpace(10),
+                                  Expanded(
+                                    child: Text(
+                                      selectedLocation,
+                                      style: TextStyle(
+                                        fontFamily: Fonts.medium,
+                                        fontSize: 14.sp,
+                                        color: Colours.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          verticalSpace(30),
                         ],
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-
-            Obx(
-              () =>
-                  controller.sharingPost.value
-                      ? Positioned.fill(
-                        child: Container(
-                          color: Colors.white.withOpacity(0.2),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      )
-                      : SizedBox.shrink(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionTile(IconData icon, String title, onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colours.white, width: 0.5),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20.sp, color: Colours.white.withOpacity(0.8)),
-            horizontalSpace(15),
-            Text(
-              title,
-              style: TextStyle(
-                fontFamily: Fonts.medium,
-                fontSize: 14.sp,
-                color: Colours.white,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 14.sp,
-              color: Colours.white.withOpacity(0.5),
             ),
           ],
         ),

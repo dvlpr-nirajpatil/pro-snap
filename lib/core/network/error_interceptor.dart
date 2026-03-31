@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:get/get_core/get_core.dart';
-import 'package:get/instance_manager.dart';
 import 'package:prosnap/core/network/logger_intercepter.dart';
+import 'package:prosnap/core/services/app_services.dart';
 import 'package:prosnap/core/services/socket_service.dart';
 import 'package:prosnap/core/services/tokens.dart';
 
@@ -25,7 +24,7 @@ class ErrorInterceptor extends Interceptor {
         final newAccessToken = Tokens.accessToken;
         if (newAccessToken == null || newAccessToken.isEmpty) {
           throw const ApiException(
-            message: "Session expired. Please sign in again.",
+            message: 'Session expired. Please sign in again.',
             statusCode: 401,
           );
         }
@@ -63,9 +62,7 @@ class ErrorInterceptor extends Interceptor {
     final message =
         data is Map<String, dynamic> ? data['message']?.toString() : null;
     final isRetry = err.requestOptions.extra['_retry'] == true;
-    final isRefreshCall = err.requestOptions.path.contains(
-      '/auth/refresh-token',
-    );
+    final isRefreshCall = err.requestOptions.path.contains('/auth/refresh-token');
 
     return statusCode == 401 &&
         message == 'Access token expired' &&
@@ -78,7 +75,7 @@ class ErrorInterceptor extends Interceptor {
 
     if (refreshToken == null || refreshToken.isEmpty) {
       throw const ApiException(
-        message: "Session expired. Please sign in again.",
+        message: 'Session expired. Please sign in again.',
         statusCode: 401,
       );
     }
@@ -90,15 +87,15 @@ class ErrorInterceptor extends Interceptor {
           connectTimeout: _dio.options.connectTimeout,
           receiveTimeout: _dio.options.receiveTimeout,
           sendTimeout: _dio.options.sendTimeout,
-          headers: {"Content-Type": "application/json"},
+          headers: {'Content-Type': 'application/json'},
         ),
       );
 
       refreshDio.interceptors.add(LoggerInterceptor());
 
       final response = await refreshDio.post(
-        "/auth/refresh-token",
-        data: {"refreshToken": refreshToken},
+        '/auth/refresh-token',
+        data: {'refreshToken': refreshToken},
       );
 
       final accessToken = response.data['data']['accessToken'] as String?;
@@ -109,7 +106,7 @@ class ErrorInterceptor extends Interceptor {
           nextRefreshToken == null ||
           nextRefreshToken.isEmpty) {
         throw const ApiException(
-          message: "Session expired. Please sign in again.",
+          message: 'Session expired. Please sign in again.',
           statusCode: 401,
         );
       }
@@ -119,7 +116,7 @@ class ErrorInterceptor extends Interceptor {
         refreshToken: nextRefreshToken,
       );
 
-      final SocketService socket = Get.find<SocketService>();
+      final SocketService socket = AppServices.socketService;
       socket.disconnect();
       socket.connect(Tokens.accessToken);
     } on DioException catch (e) {
@@ -129,8 +126,8 @@ class ErrorInterceptor extends Interceptor {
       final message =
           data is Map<String, dynamic>
               ? data['message']?.toString() ??
-                  "Session expired. Please sign in again."
-              : "Session expired. Please sign in again.";
+                  'Session expired. Please sign in again.'
+              : 'Session expired. Please sign in again.';
 
       throw ApiException(message: message, statusCode: 401);
     }
@@ -155,7 +152,7 @@ class ErrorInterceptor extends Interceptor {
         DioException(
           requestOptions: err.requestOptions,
           error: const ApiException(
-            message: "Connection timeout. Please try again.",
+            message: 'Connection timeout. Please try again.',
             statusCode: 408,
           ),
         ),
@@ -167,8 +164,8 @@ class ErrorInterceptor extends Interceptor {
       final data = err.response?.data;
 
       if (data is Map<String, dynamic>) {
-        final status = data["status"] ?? err.response?.statusCode ?? 500;
-        final message = data["message"] ?? "Something went wrong";
+        final status = data['status'] ?? err.response?.statusCode ?? 500;
+        final message = data['message'] ?? 'Something went wrong';
 
         handler.reject(
           DioException(
@@ -187,7 +184,7 @@ class ErrorInterceptor extends Interceptor {
       DioException(
         requestOptions: err.requestOptions,
         error: const ApiException(
-          message: "Unexpected error occurred",
+          message: 'Unexpected error occurred',
           statusCode: 500,
         ),
       ),

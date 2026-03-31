@@ -1,6 +1,5 @@
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/global/globals.dart';
+import 'package:prosnap/core/navigation/app_navigator.dart';
 
 abstract class AppException implements Exception {
   final String message;
@@ -14,18 +13,18 @@ abstract class AppException implements Exception {
 
 class NoInternetException extends AppException {
   const NoInternetException()
-    : super(message: "No internet connection. Please try again.");
+      : super(message: 'No internet connection. Please try again.');
 }
 
 class ApiException extends AppException {
   const ApiException({required super.message, super.statusCode});
 }
 
-handelError(e) {
+void handelError(dynamic e) {
   if (e is ApiException) {
-    Get.snackbar("Error !", e.message);
+    AppNavigator.showSnackBar('Error', e.message);
   } else if (e is NoInternetException) {
-    Get.snackbar("No Internet !", e.message);
+    AppNavigator.showSnackBar('No Internet', e.message);
   } else {
     logger.e(e);
   }

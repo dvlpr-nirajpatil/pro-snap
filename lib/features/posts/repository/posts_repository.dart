@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:get/instance_manager.dart';
 
 import 'package:prosnap/core/network/api_client.dart';
+import 'package:prosnap/core/services/app_services.dart';
 
 class PostsRepository {
-  final ApiClient apiClient = Get.find<ApiClient>();
+  final ApiClient apiClient = AppServices.apiClient;
 
   likePost(postId) async {
     try {

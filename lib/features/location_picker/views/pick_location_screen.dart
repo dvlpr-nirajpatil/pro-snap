@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/features/location_picker/controllers/pick_location_controller.dart';
-import 'package:prosnap/features/location_picker/models/location_address.dart';
 import 'package:prosnap/features/location_picker/models/place.dart';
 
 class PickLocationScreen extends StatefulWidget {
-  PickLocationScreen({super.key});
+  const PickLocationScreen({super.key});
 
   static const CameraPosition initialCameraPosition = CameraPosition(
     target: LatLng(20.5937, 78.9629),
@@ -23,15 +20,15 @@ class PickLocationScreen extends StatefulWidget {
 class _PickLocationScreenState extends State<PickLocationScreen> {
   Widget verticalSpace(double h) => SizedBox(height: h.h);
 
-  late final PickLocationController locationController;
-
+  final TextEditingController searchController = TextEditingController();
+  final List<Place> searchResults = [];
+  String currentAddress = 'India';
   CameraPosition? cameraPosition;
 
-  @override
-  void initState() {
-    super.initState();
+  void _moveToCurrentLocation() {}
 
-    locationController = Get.put(PickLocationController());
+  void _saveLocation() {
+    Navigator.pop(context, currentAddress);
   }
 
   @override
@@ -44,43 +41,26 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
             onCameraMove: (position) {
               cameraPosition = position;
             },
-            onCameraIdle: () {
-              if (cameraPosition != null) {
-                locationController.updateAddress(
-                  lat: cameraPosition!.target.latitude,
-                  lng: cameraPosition!.target.longitude,
-                );
-              }
-            },
-            style: locationController.mapStyle,
+            onCameraIdle: () {},
             initialCameraPosition: PickLocationScreen.initialCameraPosition,
-            onMapCreated: (GoogleMapController controller) {
-              locationController.cameraController.complete(controller);
-            },
+            onMapCreated: (GoogleMapController controller) {},
           ),
           Positioned(
             right: 20,
             bottom: 150,
             child: IconButton.filled(
-              onPressed: () {
-                locationController.moveToCurrentLocation();
-              },
-              icon: Icon(Icons.gps_fixed),
+              onPressed: _moveToCurrentLocation,
+              icon: const Icon(Icons.gps_fixed),
             ),
           ),
-
-          /// CENTER PIN
           Center(
             child: Icon(Icons.location_on, size: 42.sp, color: Colours.white),
           ),
-
-          /// TOP BAR + SEARCH
           SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
               child: Column(
                 children: [
-                  /// Back Button Row
                   Row(
                     children: [
                       GestureDetector(
@@ -93,7 +73,7 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        "Pick Location",
+                        'Pick Location',
                         style: TextStyle(
                           fontFamily: Fonts.semiBold,
                           fontSize: 16.sp,
@@ -105,9 +85,7 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
                       SizedBox(width: 18.w),
                     ],
                   ),
-
                   verticalSpace(20),
-
                   Container(
                     height: 50.h,
                     decoration: BoxDecoration(
@@ -136,7 +114,7 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
                                   color: Colours.white,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: "Search location...",
+                                  hintText: 'Search location...',
                                   hintStyle: TextStyle(
                                     fontFamily: Fonts.light,
                                     color: Colours.grey,
@@ -155,13 +133,11 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
               ),
             ),
           ),
-
-          /// BOTTOM LOCATION INFO + SAVE
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colours.primary,
                 border: Border(
                   top: BorderSide(color: Colours.divider, width: 0.5),
@@ -171,7 +147,6 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// Selected Location Name
                   Row(
                     children: [
                       Icon(
@@ -181,46 +156,25 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
                       ),
                       SizedBox(width: 10.w),
                       Expanded(
-                        child: Obx(
-                          () =>
-                              locationController.address.value.city == null
-                                  ? Text(
-                                    "India",
-                                    style: TextStyle(
-                                      fontFamily: Fonts.medium,
-                                      fontSize: 14.sp,
-                                      color: Colours.white,
-                                    ),
-                                  )
-                                  : Text(
-                                    locationController
-                                        .address
-                                        .value
-                                        .formatAddresss,
-                                    style: TextStyle(
-                                      fontFamily: Fonts.medium,
-                                      fontSize: 14.sp,
-                                      color: Colours.white,
-                                    ),
-                                  ),
+                        child: Text(
+                          currentAddress,
+                          style: TextStyle(
+                            fontFamily: Fonts.medium,
+                            fontSize: 14.sp,
+                            color: Colours.white,
+                          ),
                         ),
                       ),
                     ],
                   ),
-
                   verticalSpace(20),
-
-                  /// Save Button
                   SizedBox(
                     width: double.infinity,
                     height: 48.h,
                     child: ElevatedButton(
-                      onPressed: () {
-                        locationController.saveLocation();
-                        Get.back();
-                      },
+                      onPressed: _saveLocation,
                       child: Text(
-                        "SAVE LOCATION",
+                        'SAVE LOCATION',
                         style: TextStyle(
                           fontFamily: Fonts.semiBold,
                           fontSize: 14.sp,
@@ -237,112 +191,94 @@ class _PickLocationScreenState extends State<PickLocationScreen> {
       ),
     );
   }
-}
 
-void _openSearchSheet(BuildContext context) {
-  final locationController = Get.find<PickLocationController>();
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colours.primary,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-    ),
-    builder: (_) {
-      return DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              SizedBox(height: 12.h),
-
-              /// Drag Handle
-              Container(
-                width: 45.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colours.divider,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-
-              SizedBox(height: 20.h),
-
-              /// Title
-              Text(
-                "Search Location",
-                style: TextStyle(
-                  fontFamily: Fonts.semiBold,
-                  fontSize: 16.sp,
-                  color: Colours.white,
-                  letterSpacing: 1,
-                ),
-              ),
-
-              SizedBox(height: 20.h),
-
-              /// Search Field
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                child: Container(
-                  height: 50.h,
+  void _openSearchSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colours.primary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (_) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                SizedBox(height: 12.h),
+                Container(
+                  width: 45.w,
+                  height: 4.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colours.white, width: 0.6),
+                    color: Colours.divider,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, color: Colours.white.withOpacity(0.8)),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        child: TextField(
-                          onChanged: (value) {
-                            locationController.searchQuery.value = value;
-                          },
-                          controller: locationController.searchController,
-                          cursorColor: Colours.white,
-                          style: TextStyle(
-                            fontFamily: Fonts.medium,
-                            fontSize: 14.sp,
-                            color: Colours.white,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: "Search city, area...",
-                            hintStyle: TextStyle(
-                              fontFamily: Fonts.light,
-                              color: Colours.grey,
+                ),
+                SizedBox(height: 20.h),
+                Text(
+                  'Search Location',
+                  style: TextStyle(
+                    fontFamily: Fonts.semiBold,
+                    fontSize: 16.sp,
+                    color: Colours.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  child: Container(
+                    height: 50.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colours.white, width: 0.6),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search, color: Colours.white.withOpacity(0.8)),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: TextField(
+                            controller: searchController,
+                            cursorColor: Colours.white,
+                            style: TextStyle(
+                              fontFamily: Fonts.medium,
+                              fontSize: 14.sp,
+                              color: Colours.white,
                             ),
-                            border: InputBorder.none,
+                            decoration: InputDecoration(
+                              hintText: 'Search city, area...',
+                              hintStyle: TextStyle(
+                                fontFamily: Fonts.light,
+                                color: Colours.grey,
+                              ),
+                              border: InputBorder.none,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-
-              SizedBox(height: 20.h),
-
-              Divider(color: Colours.divider),
-
-              /// RESULTS LIST
-              Expanded(
-                child: Obx(
-                  () => ListView.builder(
+                SizedBox(height: 20.h),
+                const Divider(color: Colours.divider),
+                Expanded(
+                  child: ListView.builder(
                     controller: scrollController,
                     padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    itemCount: locationController.searchResults.length,
+                    itemCount: searchResults.length,
                     itemBuilder: (_, index) {
-                      final Place place =
-                          locationController.searchResults[index];
-
+                      final Place place = searchResults[index];
                       return InkWell(
-                        onTap: () async {
-                          await locationController.selectAddress(place.placeId);
+                        onTap: () {
+                          setState(() {
+                            currentAddress = place.description ?? currentAddress;
+                          });
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -361,7 +297,7 @@ void _openSearchSheet(BuildContext context) {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      place.terms?.first.value ?? "No",
+                                      place.terms?.first.value ?? 'No',
                                       style: TextStyle(
                                         fontFamily: Fonts.medium,
                                         fontSize: 14.sp,
@@ -370,7 +306,7 @@ void _openSearchSheet(BuildContext context) {
                                     ),
                                     SizedBox(height: 4.h),
                                     Text(
-                                      place.description ?? "",
+                                      place.description ?? '',
                                       style: TextStyle(
                                         fontFamily: Fonts.light,
                                         fontSize: 12.sp,
@@ -387,11 +323,11 @@ void _openSearchSheet(BuildContext context) {
                     },
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }

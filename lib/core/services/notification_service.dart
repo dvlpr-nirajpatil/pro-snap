@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
-import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:get/get.dart';
-import 'package:get/route_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:prosnap/core/navigation/app_navigator.dart';
 import 'package:prosnap/features/chating/views/chating_screen.dart';
 import 'package:prosnap/features/conversations/views/conversations.dart';
 
@@ -99,13 +98,13 @@ class NotificationService {
   }
 
   void _handleNotificationClick(String? route) async {
-    if (route == "/conversations") {
-      Get.to(() => ConversationsScreen());
+    if (route == '/conversations') {
+      AppNavigator.push(const ConversationsScreen());
     }
 
-    if (route?.contains("chat") ?? false) {
+    if (route?.contains('chat') ?? false) {
       final conversationId = route!.split("/").last;
-      Get.to(() => ChatingScreen(), arguments: conversationId);
+      AppNavigator.push(ChatingScreen(conversationId: conversationId));
     }
   }
 }

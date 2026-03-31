@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:get/utils.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/features/auth/controllers/auth_controller.dart';
-import 'package:prosnap/features/auth/views/registration_screen.dart';
+import 'package:prosnap/core/navigation/app_navigator.dart';
+import 'package:prosnap/features/auth/bloc/auth_bloc.dart';
+import 'package:prosnap/features/auth/bloc/auth_event.dart';
+import 'package:prosnap/features/auth/bloc/auth_state.dart';
+import 'package:prosnap/router/router.dart';
 
 class SignupScreen extends StatelessWidget {
   SignupScreen({super.key});
@@ -15,7 +17,6 @@ class SignupScreen extends StatelessWidget {
   final TextEditingController emailField = TextEditingController();
   final TextEditingController passwordField = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey();
-  final AuthController controller = Get.find<AuthController>();
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +31,8 @@ class SignupScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 verticalSpace(70),
-
-                /// Logo
                 Text(
-                  "PRO SNAP",
+                  'PRO SNAP',
                   style: TextStyle(
                     fontFamily: Fonts.bold,
                     fontSize: 30.sp,
@@ -41,12 +40,9 @@ class SignupScreen extends StatelessWidget {
                     color: Colours.white,
                   ),
                 ),
-
                 verticalSpace(12),
-
-                /// Subtitle
                 Text(
-                  "Create Account",
+                  'Create Account',
                   style: TextStyle(
                     fontFamily: Fonts.light,
                     fontSize: 14.sp,
@@ -54,61 +50,60 @@ class SignupScreen extends StatelessWidget {
                     color: Colours.white.withOpacity(0.7),
                   ),
                 ),
-
                 verticalSpace(50),
-
                 _buildInputField(
-                  "Email",
+                  'Email',
                   false,
                   isRequired: true,
                   controller: emailField,
                 ),
                 verticalSpace(18),
-
                 _buildInputField(
-                  "Password",
+                  'Password',
                   true,
                   isRequired: true,
                   controller: passwordField,
                 ),
-                verticalSpace(18),
-
-                verticalSpace(40),
-
-                /// Signup Button
+                verticalSpace(58),
                 SizedBox(
                   width: double.infinity,
-                  child: Obx(
-                    () => ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          controller
-                              .signUp(
-                                email: emailField.text,
-                                password: passwordField.text,
-                              )
-                              .then((e) {
-                                if (e) {
-                                  Get.offAll(() => ProfileSetupScreen());
-                                }
-                              });
-                        }
-                      },
-                      child:
-                          controller.signUpLoading.value
-                              ? ButtonLoader()
-                              : Text("SIGN UP"),
-                    ),
+                  child: BlocConsumer<AuthBloc, AuthState>(
+                    buildWhen:
+                        (previous, current) => current is SignUpEventStates,
+                    listenWhen:
+                        (previous, current) => current is SignUpEventStates,
+                    listener: (context, state) {
+                      if (state is SignUpEventSuccessState) {
+                        goRouter.goNamed(Routes.profileSetupScreen);
+                      }
+
+                      if (state is SignUpEventErrorState) {
+                        AppNavigator.showAppSnackBar(state.error);
+                      }
+                    },
+                    builder: (context, state) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          context.read<AuthBloc>().add(
+                            SignUpEvent(
+                              email: emailField.text,
+                              password: passwordField.text,
+                            ),
+                          );
+                        },
+                        child:
+                            state is SignUpEventLoadingState
+                                ? ButtonLoader()
+                                : Text('SIGN UP'),
+                      );
+                    },
                   ),
                 ),
-
                 const Spacer(),
-
-                /// Already have account
                 Column(
                   children: [
                     Text(
-                      "Already have an account?",
+                      'Already have an account?',
                       style: TextStyle(
                         fontFamily: Fonts.light,
                         fontSize: 13.sp,
@@ -121,7 +116,7 @@ class SignupScreen extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       child: Text(
-                        "Login",
+                        'Login',
                         style: TextStyle(
                           fontFamily: Fonts.semiBold,
                           fontSize: 14.sp,
@@ -132,7 +127,6 @@ class SignupScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 verticalSpace(30),
               ],
             ),
@@ -145,16 +139,16 @@ class SignupScreen extends StatelessWidget {
   Widget _buildInputField(
     String hint,
     bool obscure, {
-    isRequired = false,
-    controller,
+    bool isRequired = false,
+    required TextEditingController controller,
   }) {
     return TextFormField(
       controller: controller,
       validator:
           isRequired
               ? (value) {
-                if (value == null || value == "") {
-                  return "Required";
+                if (value == null || value.isEmpty) {
+                  return 'Required';
                 }
                 return null;
               }
@@ -188,7 +182,7 @@ class ButtonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       width: 10,
       height: 10,
       child: CircularProgressIndicator(strokeWidth: 2),

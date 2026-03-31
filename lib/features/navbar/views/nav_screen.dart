@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/features/conversations/views/conversations.dart';
 import 'package:prosnap/features/create_post/viwes/create_post_screen.dart';
@@ -18,12 +17,12 @@ class MainNavScreen extends StatefulWidget {
 class _MainNavScreenState extends State<MainNavScreen> {
   int currentIndex = 0;
 
-  final List<Widget> screens = [
+  final List<Widget> screens = const [
     HomeScreen(),
-    const SearchScreen(),
-    const SizedBox(), // Placeholder for Create Post
-    const ConversationsScreen(),
-    const ProfileScreen(),
+    SearchScreen(),
+    SizedBox(),
+    ConversationsScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -64,8 +63,6 @@ class _MainNavScreenState extends State<MainNavScreen> {
               activeIcon: Icon(Icons.search),
               label: '',
             ),
-
-            /// Center Create Button
             BottomNavigationBarItem(
               icon: Container(
                 height: 42.h,
@@ -78,7 +75,6 @@ class _MainNavScreenState extends State<MainNavScreen> {
               ),
               label: '',
             ),
-
             const BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline),
               activeIcon: Icon(Icons.chat_bubble),
@@ -110,7 +106,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Create",
+                'Create',
                 style: TextStyle(
                   color: Colours.white,
                   fontSize: 18,
@@ -120,14 +116,18 @@ class _MainNavScreenState extends State<MainNavScreen> {
               const SizedBox(height: 30),
               GestureDetector(
                 onTap: () {
-                  Get.to(() => CreatePostScreen());
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+                  );
                 },
-                child: _buildCreateOption(Icons.image_outlined, "New Post"),
+                child: _buildCreateOption(Icons.image_outlined, 'New Post'),
               ),
               const SizedBox(height: 20),
-              _buildCreateOption(Icons.videocam_outlined, "New Reel"),
+              _buildCreateOption(Icons.videocam_outlined, 'New Reel'),
               const SizedBox(height: 20),
-              _buildCreateOption(Icons.auto_stories_outlined, "New Story"),
+              _buildCreateOption(Icons.auto_stories_outlined, 'New Story'),
             ],
           ),
         );

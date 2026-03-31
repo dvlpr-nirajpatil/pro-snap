@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
-import 'package:prosnap/features/auth/controllers/auth_controller.dart';
+import 'package:prosnap/core/navigation/app_navigator.dart';
+import 'package:prosnap/core/services/current_user.dart';
+import 'package:prosnap/features/auth/bloc/auth_bloc.dart';
+import 'package:prosnap/features/auth/bloc/auth_event.dart';
+import 'package:prosnap/features/auth/bloc/auth_state.dart';
 import 'package:prosnap/features/auth/views/sign_up_screen.dart';
+import 'package:prosnap/router/router.dart';
 
 class LoginScreen extends StatelessWidget {
   LoginScreen({super.key});
@@ -14,6 +18,8 @@ class LoginScreen extends StatelessWidget {
 
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
+
+  final GlobalKey<FormState> formKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +32,8 @@ class LoginScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               verticalSpace(100),
-
-              /// Logo
               Text(
-                "PRO SNAP",
+                'PRO SNAP',
                 style: TextStyle(
                   fontFamily: Fonts.bold,
                   fontSize: 32.sp,
@@ -37,12 +41,9 @@ class LoginScreen extends StatelessWidget {
                   color: Colours.white,
                 ),
               ),
-
               verticalSpace(12),
-
-              /// Subtitle
               Text(
-                "Welcome Back",
+                'Welcome Back',
                 style: TextStyle(
                   fontFamily: Fonts.light,
                   fontSize: 14.sp,
@@ -50,53 +51,60 @@ class LoginScreen extends StatelessWidget {
                   color: Colours.white.withOpacity(0.7),
                 ),
               ),
-
               verticalSpace(60),
-
-              /// Email Field
               _buildInputField(
-                hint: "Email",
+                hint: 'Email',
                 obscure: false,
                 controller: email,
               ),
-
               verticalSpace(20),
-
-              /// Password Field
               _buildInputField(
-                hint: "Password",
+                hint: 'Password',
                 obscure: true,
                 controller: password,
               ),
-
               verticalSpace(40),
-
-              /// Login Button
               SizedBox(
                 width: double.infinity,
-                child: Obx(() {
-                  final controller = Get.find<AuthController>();
-                  return ElevatedButton(
-                    onPressed:
-                        controller.signUpLoading.value
-                            ? null
-                            : () {
-                              controller.signIn(
-                                email: email.text,
-                                password: password.text,
-                              );
-                            },
-                    child:
-                        controller.signUpLoading.value
-                            ? ButtonLoader()
-                            : Text("LOGIN"),
-                  );
-                }),
+                child: BlocConsumer<AuthBloc, AuthState>(
+                  listenWhen:
+                      (previous, current) => current is LoginEventStates,
+                  buildWhen: (previous, current) => current is LoginEventStates,
+                  listener: (context, state) {
+                    if (state is LoginEventSuccessState) {
+                      if (CurrentUser().registration) {
+                        goRouter.goNamed(Routes.homeScreen);
+                      } else {
+                        goRouter.goNamed(Routes.profileSetupScreen);
+                      }
+                    }
+
+                    if (state is LoginEventErrorState) {
+                      AppNavigator.showAppSnackBar(state.error);
+                    }
+                  },
+                  builder: (context, state) {
+                    return ElevatedButton(
+                      onPressed: () {
+                        if (email.text.trim() != "" &&
+                            password.text.trim() != "") {
+                          context.read<AuthBloc>().add(
+                            LoginEvent(
+                              email: email.text,
+                              password: password.text,
+                            ),
+                          );
+                        }
+                      },
+                      child:
+                          state is LoginEventLoadingState
+                              ? ButtonLoader()
+                              : Text('LOGIN'),
+                    );
+                  },
+                ),
               ),
-
               const Spacer(),
-
-              /// Create Account
               Column(
                 children: [
                   Text(
@@ -110,10 +118,10 @@ class LoginScreen extends StatelessWidget {
                   verticalSpace(8),
                   GestureDetector(
                     onTap: () {
-                      Get.to(() => SignupScreen());
+                      goRouter.goNamed(Routes.signUpScreen);
                     },
                     child: Text(
-                      "Create Account",
+                      'Create Account',
                       style: TextStyle(
                         fontFamily: Fonts.semiBold,
                         fontSize: 14.sp,
@@ -124,7 +132,6 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ],
               ),
-
               verticalSpace(30),
             ],
           ),
@@ -136,7 +143,7 @@ class LoginScreen extends StatelessWidget {
   Widget _buildInputField({
     required String hint,
     required bool obscure,
-    controller,
+    required TextEditingController controller,
   }) {
     return TextFormField(
       controller: controller,

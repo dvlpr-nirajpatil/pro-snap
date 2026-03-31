@@ -1,4 +1,4 @@
-package com.example.prosnap
+package com.prosnap.app
 
 import io.flutter.embedding.android.FlutterActivity
 
