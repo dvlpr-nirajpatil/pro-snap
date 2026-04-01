@@ -1,7 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/core/navigation/app_navigator.dart';
+import 'package:prosnap/features/auth/views/sign_up_screen.dart';
+import 'package:prosnap/features/profile_setup/cubit/profile_setup_cubit.dart';
+import 'package:prosnap/router/router.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -31,6 +38,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cubit = context.read<ProfileSetupCubit>();
+
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
@@ -62,21 +71,36 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                 ),
                 verticalSpace(40),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    height: 110.h,
-                    width: 110.h,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colours.white, width: 1),
-                    ),
-                    child: Icon(
-                      Icons.add_a_photo_outlined,
-                      color: Colours.white.withOpacity(0.7),
-                      size: 28.sp,
-                    ),
-                  ),
+                BlocBuilder<ProfileSetupCubit, ProfileSetupState>(
+                  builder: (context, state) {
+                    return GestureDetector(
+                      onTap: () {
+                        cubit.pickImage();
+                      },
+                      child: Container(
+                        clipBehavior: Clip.antiAlias,
+                        height: 110.h,
+                        width: 110.h,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colours.white, width: 1),
+                        ),
+                        child:
+                            state is PickImageLoadingState
+                                ? ButtonLoader()
+                                : cubit.imagePath == null
+                                ? Icon(
+                                  Icons.add_a_photo_outlined,
+                                  color: Colours.white.withOpacity(0.7),
+                                  size: 28.sp,
+                                )
+                                : Image.file(
+                                  File(cubit.imagePath!),
+                                  fit: BoxFit.cover,
+                                ),
+                      ),
+                    );
+                  },
                 ),
                 verticalSpace(40),
                 _buildInputField(
@@ -99,11 +123,38 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 verticalSpace(40),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (formKey.currentState!.validate()) {}
+                  child: BlocConsumer<ProfileSetupCubit, ProfileSetupState>(
+                    buildWhen:
+                        (previous, current) => current is SubmitDetailsStates,
+                    listenWhen:
+                        (previous, current) => current is SubmitDetailsStates,
+                    listener: (context, state) {
+                      if (state is SubmitDetailsErrorState) {
+                        AppNavigator.showAppSnackBar(state.error);
+                      }
+                      if (state is SubmitDetailsSuccessState) {
+                        goRouter.goNamed(Routes.homeScreen);
+                      }
                     },
-                    child: const Text('CONTINUE'),
+                    builder: (context, state) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          if (formKey.currentState!.validate()) {
+                            cubit.submitUserDetails(
+                              userName: userName.text,
+                              fullName: fullName.text,
+                              gender: selectedGender!,
+                              dob: dob.text,
+                              bio: bio.text,
+                            );
+                          }
+                        },
+                        child:
+                            state is SubmitDetailsLoadingState
+                                ? ButtonLoader()
+                                : Text('CONTINUE'),
+                      );
+                    },
                   ),
                 ),
                 verticalSpace(30),

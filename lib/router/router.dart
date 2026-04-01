@@ -1,6 +1,10 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prosnap/features/auth/views/login_screen.dart';
-import 'package:prosnap/features/auth/views/registration_screen.dart';
+import 'package:prosnap/features/home/cubits/posts_cubit/posts_cubit.dart';
+import 'package:prosnap/features/home/cubits/stories_cubit/stories_cubit.dart';
+import 'package:prosnap/features/profile_setup/cubit/profile_setup_cubit.dart';
+import 'package:prosnap/features/profile_setup/pages/registration_screen.dart';
 import 'package:prosnap/features/auth/views/sign_up_screen.dart';
 import 'package:prosnap/features/auth/views/splash_screen.dart';
 import 'package:prosnap/features/navbar/views/nav_screen.dart';
@@ -37,12 +41,23 @@ final GoRouter goRouter = GoRouter(
     GoRoute(
       path: '/registerUser',
       name: Routes.profileSetupScreen,
-      builder: (context, state) => ProfileSetupScreen(),
+      builder:
+          (context, state) => BlocProvider(
+            create: (context) => ProfileSetupCubit(),
+            child: ProfileSetupScreen(),
+          ),
     ),
     GoRoute(
       path: '/home',
       name: Routes.homeScreen,
-      builder: (context, state) => MainNavScreen(),
+      builder:
+          (context, state) => MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => PostsCubit()),
+              BlocProvider(create: (_) => StoriesCubit()),
+            ],
+            child: MainNavScreen(),
+          ),
     ),
   ],
 );

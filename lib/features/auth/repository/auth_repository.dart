@@ -107,34 +107,6 @@ class AuthRepository {
     }
   }
 
-  saveUserDetails({
-    required String name,
-    required String userName,
-    required String gender,
-    required String dob,
-    required String bio,
-  }) async {
-    try {
-      final payload = {
-        "name": name,
-        "userName": userName,
-        "bio": bio,
-        "gender": gender,
-        "dob": dob,
-        "profilePicture": "",
-      };
-
-      final Response response = await apiClient.dio.patch(
-        "/registration/profile",
-        data: payload,
-      );
-      final userDetails = response.data['data'];
-      CurrentUser().save(userDetails);
-    } on DioException catch (e) {
-      throw e.error as Exception;
-    }
-  }
-
   signOut() async {
     try {
       await apiClient.dio.get("/auth/sign-out");

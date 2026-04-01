@@ -6,7 +6,8 @@ class SocketService {
 
   bool isConnected = false;
 
-  final String baseUrl = 'https://inordinately-serous-maryann.ngrok-free.dev';
+  final String baseUrl =
+      'https://superambitious-noninclusively-dorcas.ngrok-free.dev';
 
   void connect(token) {
     socket = IO.io(
