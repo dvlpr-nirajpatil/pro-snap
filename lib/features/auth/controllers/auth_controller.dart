@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import 'package:prosnap/core/network/api_exception.dart';
 import 'package:prosnap/core/router/routes.dart';
 import 'package:prosnap/core/services/current_user.dart';
-import 'package:prosnap/core/services/notification_service.dart';
 import 'package:prosnap/core/services/socket_service.dart';
 import 'package:prosnap/core/services/tokens.dart';
 import 'package:prosnap/features/auth/repository/auth_repository.dart';
@@ -93,15 +92,22 @@ class AuthController extends GetxController {
     required String gender,
     required String dob,
     required String bio,
+    String? profileImagePath,
   }) async {
     signUpLoading.value = true;
     try {
+      final profilePicture =
+          profileImagePath == null || profileImagePath.isEmpty
+              ? ""
+              : await repository.uploadSingleImage(profileImagePath);
+
       await repository.saveUserDetails(
         name: name,
         userName: userName,
         gender: gender,
         dob: dob,
         bio: bio,
+        profilePicture: profilePicture,
       );
       signUpLoading.value = false;
       return true;

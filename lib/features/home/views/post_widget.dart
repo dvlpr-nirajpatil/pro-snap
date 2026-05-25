@@ -4,6 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
 import 'package:prosnap/core/models/post.dart';
+import 'package:prosnap/features/posts/models/post_comment.dart';
+import 'package:prosnap/features/posts/repository/posts_repository.dart';
 
 class PostWidget extends StatefulWidget {
   final Post post;
@@ -16,9 +18,14 @@ class PostWidget extends StatefulWidget {
 
 class _PostWidgetState extends State<PostWidget>
     with SingleTickerProviderStateMixin {
-  bool isLiked = false;
+  final PostsRepository _postsRepository = PostsRepository();
+
+  late bool isLiked;
+  late int likesCount;
+  late int commentsCount;
   bool isSaved = false;
   bool showHeart = false;
+  bool isLikeRequestRunning = false;
 
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -26,6 +33,9 @@ class _PostWidgetState extends State<PostWidget>
   @override
   void initState() {
     super.initState();
+    isLiked = widget.post.liked ?? false;
+    likesCount = widget.post.likesCount ?? 0;
+    commentsCount = widget.post.commentsCount ?? 0;
 
     _controller = AnimationController(
       vsync: this,
@@ -38,15 +48,57 @@ class _PostWidgetState extends State<PostWidget>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
   }
 
-  void toggleLike() {
+  Future<void> toggleLike({bool forceLike = false}) async {
+    if (isLikeRequestRunning || widget.post.id == null) return;
+
+    final wasLiked = isLiked;
+    final previousLikesCount = likesCount;
+    final shouldLike = forceLike || !isLiked;
+
+    if (forceLike && isLiked) {
+      _playHeartAnimation();
+      return;
+    }
+
     setState(() {
-      isLiked = !isLiked;
-      showHeart = true;
+      isLiked = shouldLike;
+      likesCount = (likesCount + (shouldLike ? 1 : -1)).clamp(0, 1 << 31);
+      isLikeRequestRunning = true;
     });
 
+    if (shouldLike) {
+      _playHeartAnimation();
+    }
+
+    try {
+      if (shouldLike) {
+        await _postsRepository.likePost(widget.post.id!);
+      } else {
+        await _postsRepository.unlikePost(widget.post.id!);
+      }
+
+      widget.post
+        ..liked = shouldLike
+        ..likesCount = likesCount;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        isLiked = wasLiked;
+        likesCount = previousLikesCount;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => isLikeRequestRunning = false);
+      }
+    }
+  }
+
+  void _playHeartAnimation() {
+    setState(() => showHeart = true);
     _controller.forward(from: 0);
 
     Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
       setState(() => showHeart = false);
     });
   }
@@ -106,7 +158,7 @@ class _PostWidgetState extends State<PostWidget>
 
         /// IMAGE + DOUBLE TAP
         GestureDetector(
-          onDoubleTap: toggleLike,
+          onDoubleTap: () => toggleLike(forceLike: true),
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -131,7 +183,7 @@ class _PostWidgetState extends State<PostWidget>
                   child: Icon(
                     Icons.favorite,
                     size: 90.sp,
-                    color: Colours.white.withOpacity(0.9),
+                    color: Colours.white.withValues(alpha: 0.9),
                   ),
                 ),
             ],
@@ -183,7 +235,7 @@ class _PostWidgetState extends State<PostWidget>
           child: GestureDetector(
             onTap: () => _openLikesSheet(context),
             child: Text(
-              "${post.likesCount ?? 0} likes",
+              "$likesCount likes",
               style: TextStyle(
                 fontFamily: Fonts.semiBold,
                 fontSize: 13.sp,
@@ -200,7 +252,7 @@ class _PostWidgetState extends State<PostWidget>
           child: GestureDetector(
             onTap: () => _openComments(context),
             child: Text(
-              "View all ${post.commentsCount ?? 0} comments",
+              "View all $commentsCount comments",
               style: TextStyle(
                 fontFamily: Fonts.light,
                 fontSize: 12.sp,
@@ -231,7 +283,7 @@ class _PostWidgetState extends State<PostWidget>
                   style: TextStyle(
                     fontFamily: Fonts.light,
                     fontSize: 13.sp,
-                    color: Colours.white.withOpacity(0.85),
+                    color: Colours.white.withValues(alpha: 0.85),
                   ),
                 ),
               ],
@@ -246,248 +298,29 @@ class _PostWidgetState extends State<PostWidget>
   }
 
   /// ---------------- COMMENT SHEET ----------------
-  void _openComments(BuildContext context) {
-    String? replyingTo;
+  Future<void> _openComments(BuildContext context) async {
+    if (widget.post.id == null) return;
 
-    showModalBottomSheet(
+    final addedCommentsCount = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colours.primary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return StatefulBuilder(
-              builder: (context, setModalState) {
-                return Column(
-                  children: [
-                    SizedBox(height: 12.h),
-
-                    /// Drag Indicator
-                    Container(
-                      width: 45.w,
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: Colours.divider,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-
-                    SizedBox(height: 20.h),
-
-                    /// Title
-                    Text(
-                      "Comments",
-                      style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 15.sp,
-                        color: Colours.white,
-                        letterSpacing: 1,
-                      ),
-                    ),
-
-                    SizedBox(height: 15.h),
-                    Divider(color: Colours.divider, thickness: 0.5),
-
-                    /// COMMENTS LIST
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        itemCount: 10,
-                        itemBuilder: (_, index) {
-                          return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 16.r,
-                                      backgroundColor: Colours.divider,
-                                    ),
-                                    SizedBox(width: 10.w),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          RichText(
-                                            text: TextSpan(
-                                              children: [
-                                                TextSpan(
-                                                  text: "user_$index ",
-                                                  style: TextStyle(
-                                                    fontFamily: Fonts.semiBold,
-                                                    fontSize: 13.sp,
-                                                    color: Colours.white,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text: "Beautiful capture!",
-                                                  style: TextStyle(
-                                                    fontFamily: Fonts.light,
-                                                    fontSize: 13.sp,
-                                                    color: Colours.white,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-
-                                          SizedBox(height: 6.h),
-
-                                          GestureDetector(
-                                            onTap: () {
-                                              setModalState(() {
-                                                replyingTo = "user_$index";
-                                              });
-                                            },
-                                            child: Text(
-                                              "Reply",
-                                              style: TextStyle(
-                                                fontFamily: Fonts.light,
-                                                fontSize: 11.sp,
-                                                color: Colours.grey,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    Divider(color: Colours.divider),
-
-                    /// INPUT SECTION
-                    Container(
-                      padding: EdgeInsets.only(
-                        left: 16.w,
-                        right: 16.w,
-                        top: 10.h,
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                      ),
-                      child: Column(
-                        children: [
-                          /// Replying To Indicator
-                          if (replyingTo != null)
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 12.w,
-                                vertical: 6.h,
-                              ),
-                              margin: EdgeInsets.only(bottom: 8.h),
-                              decoration: BoxDecoration(
-                                color: Colours.divider,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      "Replying to $replyingTo",
-                                      style: TextStyle(
-                                        fontFamily: Fonts.light,
-                                        fontSize: 11.sp,
-                                        color: Colours.white,
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setModalState(() {
-                                        replyingTo = null;
-                                      });
-                                    },
-                                    child: Icon(
-                                      Icons.close,
-                                      size: 14.sp,
-                                      color: Colours.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16.w,
-                                    vertical: 12.h,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(
-                                      color: Colours.white,
-                                      width: 0.5,
-                                    ),
-                                  ),
-                                  child: TextField(
-                                    cursorColor: Colours.white,
-                                    style: TextStyle(
-                                      fontFamily: Fonts.medium,
-                                      fontSize: 13.sp,
-                                      color: Colours.white,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText: "Add a comment...",
-                                      hintStyle: TextStyle(
-                                        fontFamily: Fonts.light,
-                                        color: Colours.grey,
-                                      ),
-                                      border: InputBorder.none,
-                                      isCollapsed: true,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              SizedBox(width: 12.w),
-
-                              GestureDetector(
-                                onTap: () {
-                                  // submit comment
-                                },
-                                child: Text(
-                                  "Post",
-                                  style: TextStyle(
-                                    fontFamily: Fonts.semiBold,
-                                    fontSize: 14.sp,
-                                    color: Colours.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    30.verticalSpace,
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
+      builder:
+          (_) => _CommentsSheet(
+            postId: widget.post.id!,
+            repository: _postsRepository,
+          ),
     );
+
+    if (addedCommentsCount != null && addedCommentsCount > 0 && mounted) {
+      setState(() {
+        commentsCount += addedCommentsCount;
+        widget.post.commentsCount = commentsCount;
+      });
+    }
   }
 
   void _openLikesSheet(BuildContext context) {
@@ -577,6 +410,412 @@ class _PostWidgetState extends State<PostWidget>
           },
         );
       },
+    );
+  }
+}
+
+class _CommentsSheet extends StatefulWidget {
+  final String postId;
+  final PostsRepository repository;
+
+  const _CommentsSheet({required this.postId, required this.repository});
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
+
+  List<PostComment> _comments = [];
+  PostComment? _replyingTo;
+  bool _isLoading = true;
+  bool _isPosting = false;
+  int _addedCommentsCount = 0;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _commentFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadComments() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final comments = await widget.repository.getPostComments(
+        postId: widget.postId,
+      );
+      if (!mounted) return;
+      setState(() => _comments = comments);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = "Unable to load comments.");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty || _isPosting) return;
+
+    setState(() => _isPosting = true);
+
+    try {
+      final comment = await widget.repository.commentPost(
+        postId: widget.postId,
+        comment: text,
+        parentCommentId: _replyingTo?.id,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        if (comment != null) {
+          _comments.insert(0, comment);
+        }
+        _commentController.clear();
+        _replyingTo = null;
+        _addedCommentsCount += 1;
+      });
+      _commentFocusNode.unfocus();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Unable to post comment.")));
+    } finally {
+      if (mounted) {
+        setState(() => _isPosting = false);
+      }
+    }
+  }
+
+  void _close() {
+    Navigator.pop(context, _addedCommentsCount);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _close();
+      },
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Column(
+            children: [
+              SizedBox(height: 12.h),
+              Container(
+                width: 45.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colours.divider,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Row(
+                children: [
+                  SizedBox(width: 48.w),
+                  Expanded(
+                    child: Text(
+                      "Comments",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: Fonts.semiBold,
+                        fontSize: 15.sp,
+                        color: Colours.white,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _close,
+                    icon: Icon(Icons.close, color: Colours.white, size: 20.sp),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10.h),
+              Divider(color: Colours.divider, thickness: 0.5),
+              Expanded(child: _buildComments(scrollController)),
+              Divider(color: Colours.divider),
+              _buildInputArea(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildComments(ScrollController scrollController) {
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(color: Colours.white, strokeWidth: 2),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: TextButton(onPressed: _loadComments, child: Text(_error!)),
+      );
+    }
+
+    if (_comments.isEmpty) {
+      return Center(
+        child: Text(
+          "No comments yet",
+          style: TextStyle(
+            fontFamily: Fonts.light,
+            fontSize: 13.sp,
+            color: Colours.grey,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: scrollController,
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      itemCount: _comments.length,
+      itemBuilder:
+          (_, index) => _CommentTile(
+            comment: _comments[index],
+            onReply: () {
+              if (_comments[index].id.isEmpty) return;
+              setState(() => _replyingTo = _comments[index]);
+              _commentFocusNode.requestFocus();
+            },
+          ),
+    );
+  }
+
+  Widget _buildInputArea() {
+    final replyingToName =
+        _replyingTo?.user?.userName.isNotEmpty == true
+            ? _replyingTo!.user!.userName
+            : _replyingTo?.user?.name ?? "comment";
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16.w,
+        right: 16.w,
+        top: 10.h,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 14.h,
+      ),
+      child: Column(
+        children: [
+          if (_replyingTo != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              margin: EdgeInsets.only(bottom: 8.h),
+              decoration: BoxDecoration(
+                color: Colours.divider,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Replying to $replyingToName",
+                      style: TextStyle(
+                        fontFamily: Fonts.light,
+                        fontSize: 11.sp,
+                        color: Colours.white,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _replyingTo = null),
+                    child: Icon(Icons.close, size: 14.sp, color: Colours.white),
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 12.h,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: Colours.white, width: 0.5),
+                  ),
+                  child: TextField(
+                    controller: _commentController,
+                    focusNode: _commentFocusNode,
+                    enabled: !_isPosting,
+                    cursorColor: Colours.white,
+                    style: TextStyle(
+                      fontFamily: Fonts.medium,
+                      fontSize: 13.sp,
+                      color: Colours.white,
+                    ),
+                    decoration: InputDecoration(
+                      hintText:
+                          _replyingTo == null
+                              ? "Add a comment..."
+                              : "Add a reply...",
+                      hintStyle: TextStyle(
+                        fontFamily: Fonts.light,
+                        color: Colours.grey,
+                      ),
+                      border: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                    onSubmitted: (_) => _submitComment(),
+                  ),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              GestureDetector(
+                onTap: _isPosting ? null : _submitComment,
+                child:
+                    _isPosting
+                        ? SizedBox(
+                          width: 18.w,
+                          height: 18.w,
+                          child: CircularProgressIndicator(
+                            color: Colours.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : Text(
+                          "Post",
+                          style: TextStyle(
+                            fontFamily: Fonts.semiBold,
+                            fontSize: 14.sp,
+                            color: Colours.white,
+                          ),
+                        ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentTile extends StatelessWidget {
+  final PostComment comment;
+  final VoidCallback onReply;
+
+  const _CommentTile({required this.comment, required this.onReply});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = comment.user;
+    final displayName =
+        user?.userName.isNotEmpty == true
+            ? user!.userName
+            : user?.name.isNotEmpty == true
+            ? user!.name
+            : "user";
+    final profilePicture = user?.profilePicture ?? "";
+    final isReply = comment.parentCommentId?.isNotEmpty == true;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isReply ? 28.w : 0,
+        top: 12.h,
+        bottom: 12.h,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isReply) ...[
+            Container(
+              width: 2.w,
+              height: 38.h,
+              margin: EdgeInsets.only(right: 10.w),
+              decoration: BoxDecoration(
+                color: Colours.white.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ],
+          CircleAvatar(
+            radius: 16.r,
+            backgroundColor: Colours.divider,
+            backgroundImage:
+                profilePicture.isEmpty
+                    ? null
+                    : CachedNetworkImageProvider(profilePicture),
+            child:
+                profilePicture.isEmpty
+                    ? Text(
+                      displayName.characters.first.toUpperCase(),
+                      style: TextStyle(fontSize: 11.sp, color: Colours.white),
+                    )
+                    : null,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: "$displayName ",
+                        style: TextStyle(
+                          fontFamily: Fonts.semiBold,
+                          fontSize: 13.sp,
+                          color: Colours.white,
+                        ),
+                      ),
+                      TextSpan(
+                        text: comment.text,
+                        style: TextStyle(
+                          fontFamily: Fonts.light,
+                          fontSize: 13.sp,
+                          color: Colours.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                GestureDetector(
+                  onTap: onReply,
+                  child: Text(
+                    "Reply",
+                    style: TextStyle(
+                      fontFamily: Fonts.light,
+                      fontSize: 11.sp,
+                      color: Colours.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

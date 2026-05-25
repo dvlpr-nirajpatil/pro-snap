@@ -9,7 +9,7 @@ class ApiClient {
   ApiClient() {
     dio = Dio(
       BaseOptions(
-        baseUrl: "https://inordinately-serous-maryann.ngrok-free.dev/api/v1",
+        baseUrl: "https://alysha-unlanterned-ingrainedly.ngrok-free.dev/api/v1",
         connectTimeout: const Duration(seconds: 200),
         receiveTimeout: const Duration(seconds: 200),
         headers: {"Content-Type": "application/json"},

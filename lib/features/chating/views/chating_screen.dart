@@ -40,11 +40,13 @@ class ChatingScreen extends StatelessWidget {
                     horizontal: 16.w,
                     vertical: 20.h,
                   ),
-                  itemBuilder:
-                      (context, index) => _MessageBubble(
-                        message: messages[index].text ?? "",
-                        isMe: messages[index].sender == CurrentUser().id,
-                      ),
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    return _MessageBubble(
+                      message: message.text ?? "",
+                      isMe: message.sender == CurrentUser().id,
+                    );
+                  },
                 );
               }),
             ),
@@ -261,25 +263,34 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.only(bottom: 14.h),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        constraints: BoxConstraints(maxWidth: 250.w),
-        decoration: BoxDecoration(
-          color: isMe ? Colours.white : Colours.divider,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text(
-          message,
-          style: TextStyle(
-            fontFamily: Fonts.medium,
-            fontSize: 13.sp,
-            color: isMe ? Colours.primary : Colours.white,
+    return Row(
+      mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Container(
+            margin: EdgeInsets.only(bottom: 14.h),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            constraints: BoxConstraints(maxWidth: 250.w),
+            decoration: BoxDecoration(
+              color: isMe ? Colours.white : Colours.divider,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(18.r),
+                topRight: Radius.circular(18.r),
+                bottomLeft: Radius.circular(isMe ? 18.r : 4.r),
+                bottomRight: Radius.circular(isMe ? 4.r : 18.r),
+              ),
+            ),
+            child: Text(
+              message,
+              style: TextStyle(
+                fontFamily: Fonts.medium,
+                fontSize: 13.sp,
+                color: isMe ? Colours.primary : Colours.white,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
+import 'package:prosnap/core/services/current_user.dart';
 import 'package:prosnap/features/auth/controllers/auth_controller.dart';
 import 'package:prosnap/features/manage_profile/views/manage_profile_screen.dart';
 import 'package:prosnap/features/profile/views/verified_subscription_screen.dart';
@@ -16,167 +17,121 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
+    final user = CurrentUser();
+    final displayName = user.name.isNotEmpty ? user.name : "Pro User";
+    final userName = user.userName.isNotEmpty ? user.userName : "pro_user";
+    final bio =
+        user.bio.isNotEmpty
+            ? user.bio
+            : "Capturing minimal moments in silence.\nLuxury • Editorial • Black & White";
 
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            /// Top Username Bar
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
-                child: Text(
-                  "pro_user",
-                  style: TextStyle(
-                    fontFamily: Fonts.bold,
-                    fontSize: 20.sp,
-                    letterSpacing: 2,
-                    color: Colours.white,
-                  ),
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: Colours.primary,
+              elevation: 0,
+              titleSpacing: 20.w,
+              title: Text(
+                "@$userName",
+                style: TextStyle(
+                  fontFamily: Fonts.bold,
+                  fontSize: 18.sp,
+                  color: Colours.white,
                 ),
               ),
+              actions: [
+                Obx(
+                  () => IconButton(
+                    tooltip: "Sign out",
+                    onPressed:
+                        authController.signUpLoading.value
+                            ? null
+                            : authController.signOut,
+                    icon:
+                        authController.signUpLoading.value
+                            ? SizedBox(
+                              width: 18.w,
+                              height: 18.w,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colours.white,
+                              ),
+                            )
+                            : Icon(
+                              Icons.logout_rounded,
+                              color: Colours.white,
+                              size: 20.sp,
+                            ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+              ],
             ),
-
-            /// Profile Info Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+              sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _ProfileHeader(
+                      name: displayName,
+                      userName: userName,
+                      bio: bio,
+                      imageUrl: user.profilePicture,
+                      isVerified: user.isVerified,
+                    ),
+                    verticalSpace(22),
                     Row(
                       children: [
-                        /// Profile Image
-                        CircleAvatar(
-                          radius: 45.r,
-                          backgroundColor: Colours.divider,
-                        ),
-
-                        horizontalSpace(30),
-
-                        /// Stats
+                        Expanded(child: _buildStat("120", "Posts")),
+                        horizontalSpace(10),
+                        Expanded(child: _buildStat("5.2K", "Followers")),
+                        horizontalSpace(10),
+                        Expanded(child: _buildStat("380", "Following")),
+                      ],
+                    ),
+                    verticalSpace(18),
+                    Row(
+                      children: [
                         Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildStat("120", "Posts"),
-                              _buildStat("5.2K", "Followers"),
-                              _buildStat("380", "Following"),
-                            ],
+                          child: _ActionButton(
+                            icon: Icons.edit_outlined,
+                            label: "Manage",
+                            onTap: () => Get.to(() => ManageProfileScreen()),
+                          ),
+                        ),
+                        horizontalSpace(10),
+                        Expanded(
+                          child: _ActionButton(
+                            icon: Icons.verified_outlined,
+                            label: "Verify",
+                            onTap:
+                                () => Get.to(
+                                  () => const VerifiedSubscriptionScreen(),
+                                ),
                           ),
                         ),
                       ],
                     ),
-
-                    verticalSpace(20),
-
-                    /// Bio Section
-                    Text(
-                      "Pro User",
-                      style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 14.sp,
-                        color: Colours.white,
-                      ),
-                    ),
-
-                    verticalSpace(6),
-
-                    Text(
-                      "Capturing minimal moments in silence.\nLuxury • Editorial • Black & White",
-                      style: TextStyle(
-                        fontFamily: Fonts.light,
-                        fontSize: 13.sp,
-                        color: Colours.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-
-                    verticalSpace(20),
-
+                    verticalSpace(18),
                     _buildVerifiedCard(),
-
-                    verticalSpace(20),
-
-                    /// Manage Profile Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: Column(
-                        children: [
-                          OutlinedButton(
-                            onPressed: () {
-                              Get.to(() => ManageProfileScreen());
-                            },
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: Colours.white,
-                                width: 0.8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            child: Text(
-                              "Manage Profile",
-                              style: TextStyle(
-                                fontFamily: Fonts.medium,
-                                fontSize: 13.sp,
-                                letterSpacing: 1,
-                                color: Colours.white,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 12.h),
-                          Obx(
-                            () => OutlinedButton(
-                              onPressed:
-                                  authController.signUpLoading.value
-                                      ? null
-                                      : authController.signOut,
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Colours.white,
-                                  width: 0.8,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              child: Text(
-                                authController.signUpLoading.value
-                                    ? "Signing Out..."
-                                    : "Sign Out",
-                                style: TextStyle(
-                                  fontFamily: Fonts.medium,
-                                  fontSize: 13.sp,
-                                  letterSpacing: 1,
-                                  color: Colours.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    verticalSpace(25),
+                    verticalSpace(24),
+                    _ProfileTabs(),
                   ],
                 ),
               ),
             ),
-
-            /// Divider
-            SliverToBoxAdapter(
-              child: Divider(color: Colours.divider, thickness: 0.5),
-            ),
-
-            /// Posts Grid
             SliverPadding(
-              padding: EdgeInsets.all(2.w),
+              padding: EdgeInsets.symmetric(horizontal: 2.w),
               sliver: SliverGrid(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  return Container(color: Colours.divider);
-                }, childCount: 18),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _PostTile(index: index),
+                  childCount: 18,
+                ),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 2.w,
@@ -184,6 +139,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
+            SliverToBoxAdapter(child: SizedBox(height: 24.h)),
           ],
         ),
       ),
@@ -191,118 +147,31 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildStat(String count, String label) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: TextStyle(
-            fontFamily: Fonts.semiBold,
-            fontSize: 15.sp,
-            color: Colours.white,
-          ),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: Fonts.light,
-            fontSize: 12.sp,
-            color: Colours.white.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVerifiedCard() {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(18.w),
+      height: 72.h,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF111827), Color(0xFF0F3D91)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: Colours.white.withValues(alpha: 0.08)),
+        color: Colours.divider,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colours.white.withValues(alpha: 0.06)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                height: 42.h,
-                width: 42.h,
-                decoration: BoxDecoration(
-                  color: Colours.white.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.verified_rounded,
-                  color: Colours.white,
-                  size: 22.sp,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Get Verified",
-                      style: TextStyle(
-                        fontFamily: Fonts.bold,
-                        fontSize: 16.sp,
-                        color: Colours.white,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      "Buy a verified tick to boost trust and profile visibility.",
-                      style: TextStyle(
-                        fontFamily: Fonts.light,
-                        fontSize: 12.sp,
-                        color: Colours.white.withValues(alpha: 0.78),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            count,
+            style: TextStyle(
+              fontFamily: Fonts.bold,
+              fontSize: 17.sp,
+              color: Colours.white,
+            ),
           ),
-          verticalSpace(16),
-          Row(
-            children: [
-              _buildVerifiedPill("Blue badge"),
-              horizontalSpace(8),
-              _buildVerifiedPill("Priority support"),
-            ],
-          ),
-          verticalSpace(16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Get.to(() => const VerifiedSubscriptionScreen());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colours.white,
-                foregroundColor: Colours.primary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-              ),
-              child: Text(
-                "See Plans",
-                style: TextStyle(
-                  fontFamily: Fonts.semiBold,
-                  fontSize: 13.sp,
-                  letterSpacing: 1,
-                ),
-              ),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: Fonts.light,
+              fontSize: 11.sp,
+              color: Colours.white.withValues(alpha: 0.68),
             ),
           ),
         ],
@@ -310,20 +179,290 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVerifiedPill(String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: Colours.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(30.r),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: Fonts.medium,
-          fontSize: 11.sp,
-          color: Colours.white,
+  Widget _buildVerifiedCard() {
+    return Material(
+      color: Colours.white,
+      borderRadius: BorderRadius.circular(8.r),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.r),
+        onTap: () => Get.to(() => const VerifiedSubscriptionScreen()),
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Row(
+            children: [
+              Container(
+                height: 46.h,
+                width: 46.h,
+                decoration: BoxDecoration(
+                  color: Colours.primary,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(
+                  Icons.verified_rounded,
+                  color: Colours.white,
+                  size: 24.sp,
+                ),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Build a trusted profile",
+                      style: TextStyle(
+                        fontFamily: Fonts.bold,
+                        fontSize: 14.sp,
+                        color: Colours.primary,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      "Unlock verification, profile priority, and account support.",
+                      style: TextStyle(
+                        fontFamily: Fonts.regular,
+                        fontSize: 11.sp,
+                        color: Colours.primary.withValues(alpha: 0.62),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colours.primary,
+                size: 15.sp,
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final String name;
+  final String userName;
+  final String bio;
+  final String imageUrl;
+  final bool isVerified;
+
+  const _ProfileHeader({
+    required this.name,
+    required this.userName,
+    required this.bio,
+    required this.imageUrl,
+    required this.isVerified,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 92.w,
+              height: 92.w,
+              padding: EdgeInsets.all(3.w),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colours.white, width: 1),
+              ),
+              child: CircleAvatar(
+                backgroundColor: Colours.divider,
+                backgroundImage:
+                    imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+                child:
+                    imageUrl.isEmpty
+                        ? Text(
+                          name.characters.first.toUpperCase(),
+                          style: TextStyle(
+                            fontFamily: Fonts.bold,
+                            fontSize: 30.sp,
+                            color: Colours.white,
+                          ),
+                        )
+                        : null,
+              ),
+            ),
+            if (isVerified)
+              Positioned(
+                right: 2.w,
+                bottom: 6.h,
+                child: Container(
+                  height: 24.h,
+                  width: 24.h,
+                  decoration: const BoxDecoration(
+                    color: Colours.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.verified_rounded,
+                    color: Colours.primary,
+                    size: 18.sp,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        SizedBox(width: 18.w),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 4.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: Fonts.bold,
+                          fontSize: 22.sp,
+                          color: Colours.white,
+                        ),
+                      ),
+                    ),
+                    if (isVerified) ...[
+                      SizedBox(width: 6.w),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: Colours.white,
+                        size: 18.sp,
+                      ),
+                    ],
+                  ],
+                ),
+                SizedBox(height: 5.h),
+                Text(
+                  "@$userName",
+                  style: TextStyle(
+                    fontFamily: Fonts.medium,
+                    fontSize: 12.sp,
+                    color: Colours.grey,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  bio,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: Fonts.regular,
+                    fontSize: 12.sp,
+                    height: 1.35,
+                    color: Colours.white.withValues(alpha: 0.78),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44.h,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 17.sp),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colours.white,
+          side: BorderSide(color: Colours.white.withValues(alpha: 0.24)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: TextStyle(fontFamily: Fonts.semiBold, fontSize: 12.sp),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileTabs extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46.h,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colours.white.withValues(alpha: 0.08)),
+          bottom: BorderSide(color: Colours.white.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _tab(Icons.grid_on_rounded, true)),
+          Expanded(child: _tab(Icons.bookmark_border_rounded, false)),
+          Expanded(child: _tab(Icons.person_pin_outlined, false)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tab(IconData icon, bool selected) {
+    return Center(
+      child: Icon(
+        icon,
+        color: selected ? Colours.white : Colours.grey,
+        size: 21.sp,
+      ),
+    );
+  }
+}
+
+class _PostTile extends StatelessWidget {
+  final int index;
+
+  const _PostTile({required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final shades = [
+      const Color(0xFF242424),
+      const Color(0xFF303030),
+      const Color(0xFF181818),
+      const Color(0xFF3A3A3A),
+    ];
+
+    return Container(
+      color: shades[index % shades.length],
+      child: Stack(
+        children: [
+          Positioned(
+            right: 8.w,
+            top: 8.h,
+            child: Icon(
+              index.isEven
+                  ? Icons.collections_rounded
+                  : Icons.play_arrow_rounded,
+              color: Colours.white.withValues(alpha: 0.72),
+              size: 16.sp,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/utils.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
 import 'package:prosnap/features/auth/controllers/auth_controller.dart';
@@ -22,121 +21,133 @@ class SignupScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 28.w),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                verticalSpace(70),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.symmetric(horizontal: 28.w),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        verticalSpace(70),
 
-                /// Logo
-                Text(
-                  "PRO SNAP",
-                  style: TextStyle(
-                    fontFamily: Fonts.bold,
-                    fontSize: 30.sp,
-                    letterSpacing: 6,
-                    color: Colours.white,
-                  ),
-                ),
-
-                verticalSpace(12),
-
-                /// Subtitle
-                Text(
-                  "Create Account",
-                  style: TextStyle(
-                    fontFamily: Fonts.light,
-                    fontSize: 14.sp,
-                    letterSpacing: 1.5,
-                    color: Colours.white.withOpacity(0.7),
-                  ),
-                ),
-
-                verticalSpace(50),
-
-                _buildInputField(
-                  "Email",
-                  false,
-                  isRequired: true,
-                  controller: emailField,
-                ),
-                verticalSpace(18),
-
-                _buildInputField(
-                  "Password",
-                  true,
-                  isRequired: true,
-                  controller: passwordField,
-                ),
-                verticalSpace(18),
-
-                verticalSpace(40),
-
-                /// Signup Button
-                SizedBox(
-                  width: double.infinity,
-                  child: Obx(
-                    () => ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          controller
-                              .signUp(
-                                email: emailField.text,
-                                password: passwordField.text,
-                              )
-                              .then((e) {
-                                if (e) {
-                                  Get.offAll(() => ProfileSetupScreen());
-                                }
-                              });
-                        }
-                      },
-                      child:
-                          controller.signUpLoading.value
-                              ? ButtonLoader()
-                              : Text("SIGN UP"),
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-
-                /// Already have account
-                Column(
-                  children: [
-                    Text(
-                      "Already have an account?",
-                      style: TextStyle(
-                        fontFamily: Fonts.light,
-                        fontSize: 13.sp,
-                        color: Colours.grey,
-                      ),
-                    ),
-                    verticalSpace(8),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        "Login",
-                        style: TextStyle(
-                          fontFamily: Fonts.semiBold,
-                          fontSize: 14.sp,
-                          letterSpacing: 1.2,
-                          color: Colours.white,
+                        /// Logo
+                        Text(
+                          "PRO SNAP",
+                          style: TextStyle(
+                            fontFamily: Fonts.bold,
+                            fontSize: 30.sp,
+                            letterSpacing: 6,
+                            color: Colours.white,
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
 
-                verticalSpace(30),
-              ],
-            ),
-          ),
+                        verticalSpace(12),
+
+                        /// Subtitle
+                        Text(
+                          "Create Account",
+                          style: TextStyle(
+                            fontFamily: Fonts.light,
+                            fontSize: 14.sp,
+                            letterSpacing: 1.5,
+                            color: Colours.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+
+                        verticalSpace(50),
+
+                        _buildInputField(
+                          "Email",
+                          false,
+                          isRequired: true,
+                          controller: emailField,
+                        ),
+                        verticalSpace(18),
+
+                        _buildInputField(
+                          "Password",
+                          true,
+                          isRequired: true,
+                          controller: passwordField,
+                        ),
+                        verticalSpace(18),
+
+                        verticalSpace(40),
+
+                        /// Signup Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: Obx(
+                            () => ElevatedButton(
+                              onPressed: () {
+                                if (formKey.currentState!.validate()) {
+                                  controller
+                                      .signUp(
+                                        email: emailField.text,
+                                        password: passwordField.text,
+                                      )
+                                      .then((e) {
+                                        if (e) {
+                                          Get.offAll(
+                                            () => ProfileSetupScreen(),
+                                          );
+                                        }
+                                      });
+                                }
+                              },
+                              child:
+                                  controller.signUpLoading.value
+                                      ? ButtonLoader()
+                                      : Text("SIGN UP"),
+                            ),
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        /// Already have account
+                        Column(
+                          children: [
+                            Text(
+                              "Already have an account?",
+                              style: TextStyle(
+                                fontFamily: Fonts.light,
+                                fontSize: 13.sp,
+                                color: Colours.grey,
+                              ),
+                            ),
+                            verticalSpace(8),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                              },
+                              child: Text(
+                                "Login",
+                                style: TextStyle(
+                                  fontFamily: Fonts.semiBold,
+                                  fontSize: 14.sp,
+                                  letterSpacing: 1.2,
+                                  color: Colours.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        verticalSpace(30),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

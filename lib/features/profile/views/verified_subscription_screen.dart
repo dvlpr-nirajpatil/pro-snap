@@ -14,26 +14,65 @@ class VerifiedSubscriptionScreen extends StatefulWidget {
 
 class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
     with SingleTickerProviderStateMixin {
-  late final Razorpay _razorpay;
-  late final AnimationController _successAnimationController;
-  late final Animation<double> _successScaleAnimation;
+  static const _razorpayKey = 'rzp_test_RJLx4xAV8HGFCq';
 
-  int _selectedAmount = 2999;
-  String _selectedPlanTitle = "Annual";
+  late final Razorpay _razorpay;
+  late final AnimationController _successController;
+  late final Animation<double> _successScale;
+
+  int _selectedPlanIndex = 1;
   bool _isProcessingPayment = false;
 
-  Widget verticalSpace(double height) => SizedBox(height: height.h);
+  _VerifiedPlan get _selectedPlan => _plans[_selectedPlanIndex];
+
+  static const List<_VerifiedFeature> _features = [
+    _VerifiedFeature(
+      icon: Icons.verified_rounded,
+      title: "Verified badge",
+      subtitle: "Stand out with a blue check beside your name across the app.",
+    ),
+    _VerifiedFeature(
+      icon: Icons.support_agent_rounded,
+      title: "Priority support",
+      subtitle:
+          "Get faster account help when you need profile or safety support.",
+    ),
+    _VerifiedFeature(
+      icon: Icons.visibility_outlined,
+      title: "Stronger trust signals",
+      subtitle:
+          "Show your audience that your account is confirmed and authentic.",
+    ),
+  ];
+
+  static const List<_VerifiedPlan> _plans = [
+    _VerifiedPlan(
+      title: "Monthly",
+      price: "Rs 299",
+      period: "/month",
+      amount: 299,
+      description: "Flexible billing with full verified benefits.",
+    ),
+    _VerifiedPlan(
+      title: "Annual",
+      price: "Rs 2,999",
+      period: "/year",
+      amount: 2999,
+      description: "Best value for creators who want year-round verification.",
+      isRecommended: true,
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
     _razorpay = Razorpay();
-    _successAnimationController = AnimationController(
+    _successController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _successScaleAnimation = CurvedAnimation(
-      parent: _successAnimationController,
+    _successScale = CurvedAnimation(
+      parent: _successController,
       curve: Curves.elasticOut,
     );
 
@@ -45,23 +84,30 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
   @override
   void dispose() {
     _razorpay.clear();
-    _successAnimationController.dispose();
+    _successController.dispose();
     super.dispose();
   }
 
-  void createPayment(int amount) {
-    setState(() {
-      _isProcessingPayment = true;
-    });
+  void _selectPlan(int index) {
+    if (_isProcessingPayment || _selectedPlanIndex == index) return;
+    setState(() => _selectedPlanIndex = index);
+  }
 
+  void _startPayment() {
+    if (_isProcessingPayment) return;
+
+    setState(() => _isProcessingPayment = true);
+
+    final plan = _selectedPlan;
     final options = {
-      'key': 'rzp_test_RJLx4xAV8HGFCq',
-      'amount': amount * 100,
+      'key': _razorpayKey,
+      'amount': plan.amount * 100,
+      'currency': 'INR',
       'name': 'ProSnap Verified',
-      'description': '$_selectedPlanTitle verified subscription',
+      'description': '${plan.title} verified subscription',
       'prefill': {'contact': '8888888888', 'email': 'test@razorpay.com'},
       'external': {
-        'wallets': ['paytm', 'phonepe', 'amazonpay'],
+        'wallets': ['paytm'],
       },
     };
 
@@ -69,42 +115,30 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
       _razorpay.open(options);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _isProcessingPayment = false;
-      });
+      setState(() => _isProcessingPayment = false);
       _showGenericFailureDialog();
     }
   }
 
   Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
     if (!mounted) return;
-
-    setState(() {
-      _isProcessingPayment = false;
-    });
-
+    setState(() => _isProcessingPayment = false);
     await _showSuccessDialog(response.paymentId);
   }
 
   Future<void> _handlePaymentError(PaymentFailureResponse response) async {
     if (!mounted) return;
-
-    setState(() {
-      _isProcessingPayment = false;
-    });
-
+    setState(() => _isProcessingPayment = false);
     await _showPaymentFailedDialog(response);
   }
 
   Future<void> _handleExternalWallet(ExternalWalletResponse response) async {
     if (!mounted) return;
-
-    setState(() {
-      _isProcessingPayment = false;
-    });
-
+    setState(() => _isProcessingPayment = false);
     await _showExternalWalletSheet(response.walletName);
   }
+
+  Widget verticalSpace(double height) => SizedBox(height: height.h);
 
   @override
   Widget build(BuildContext context) {
@@ -113,208 +147,51 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colours.white,
-                      size: 18.sp,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    "Verified",
-                    style: TextStyle(
-                      fontFamily: Fonts.bold,
-                      fontSize: 18.sp,
-                      letterSpacing: 2,
-                      color: Colours.white,
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(width: 18.w),
-                ],
-              ),
-            ),
-            Divider(color: Colours.divider, thickness: 0.5),
+            _TopBar(onBack: () => Navigator.pop(context)),
+            Divider(color: Colours.divider, thickness: 0.5, height: 1),
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 24.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeroCard(),
+                    const _HeroCard(),
                     verticalSpace(24),
-                    Text(
-                      "What you get",
-                      style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 16.sp,
-                        color: Colours.white,
+                    const _SectionTitle("What you get"),
+                    verticalSpace(14),
+                    for (final feature in _features) ...[
+                      _FeatureTile(feature: feature),
+                      SizedBox(height: 12.h),
+                    ],
+                    verticalSpace(14),
+                    const _SectionTitle("Choose your plan"),
+                    verticalSpace(14),
+                    for (int index = 0; index < _plans.length; index++) ...[
+                      _PlanCard(
+                        plan: _plans[index],
+                        isSelected: _selectedPlanIndex == index,
+                        isEnabled: !_isProcessingPayment,
+                        onTap: () => _selectPlan(index),
                       ),
-                    ),
-                    verticalSpace(14),
-                    _buildFeatureTile(
-                      icon: Icons.verified_rounded,
-                      title: "Verified badge",
-                      subtitle:
-                          "Stand out with a blue check beside your name across the app.",
-                    ),
-                    _buildFeatureTile(
-                      icon: Icons.support_agent,
-                      title: "Priority support",
-                      subtitle:
-                          "Get faster account help when you need profile or safety support.",
-                    ),
-                    _buildFeatureTile(
-                      icon: Icons.visibility_outlined,
-                      title: "Stronger trust signals",
-                      subtitle:
-                          "Show your audience that your account is confirmed and authentic.",
-                    ),
-                    verticalSpace(26),
-                    Text(
-                      "Choose your plan",
-                      style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 16.sp,
-                        color: Colours.white,
-                      ),
-                    ),
-                    verticalSpace(14),
-                    _buildPlanCard(
-                      title: "Monthly",
-                      price: "Rs 299",
-                      period: "/month",
-                      amount: 299,
-                      description:
-                          "Flexible billing with full verified benefits.",
-                      isRecommended: false,
-                    ),
-                    verticalSpace(14),
-                    _buildPlanCard(
-                      title: "Annual",
-                      price: "Rs 2,999",
-                      period: "/year",
-                      amount: 2999,
-                      description:
-                          "Best value for creators who want year-round verification.",
-                      isRecommended: true,
-                    ),
+                      if (index != _plans.length - 1) SizedBox(height: 14.h),
+                    ],
                     verticalSpace(24),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(16.w),
-                      decoration: BoxDecoration(
-                        color: Colours.divider,
-                        borderRadius: BorderRadius.circular(18.r),
-                        border: Border.all(
-                          color: Colours.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Before you subscribe",
-                            style: TextStyle(
-                              fontFamily: Fonts.semiBold,
-                              fontSize: 14.sp,
-                              color: Colours.white,
-                            ),
-                          ),
-                          verticalSpace(10),
-                          Text(
-                            "Your profile name, username, photo, and activity must follow community rules. Billing and verification approval logic can be connected here later.",
-                            style: TextStyle(
-                              fontFamily: Fonts.light,
-                              fontSize: 12.sp,
-                              height: 1.6,
-                              color: Colours.white.withValues(alpha: 0.72),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const _InfoCard(
+                      title: "Before you subscribe",
+                      body:
+                          "Your profile name, username, photo, and activity must follow community rules. Billing and verification approval logic can be connected here later.",
                     ),
-                    verticalSpace(18),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(14.w),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF101D36),
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(
-                          color: Colours.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.account_balance_wallet_outlined,
-                            color: const Color(0xFF8AC4FF),
-                            size: 20.sp,
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: Text(
-                              "External wallets like Paytm and PhonePe are supported and handled through Razorpay callbacks.",
-                              style: TextStyle(
-                                fontFamily: Fonts.light,
-                                fontSize: 12.sp,
-                                height: 1.5,
-                                color: Colours.white.withValues(alpha: 0.74),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    verticalSpace(14),
+                    const _WalletNote(),
                     verticalSpace(28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52.h,
-                      child: ElevatedButton(
-                        onPressed:
-                            _isProcessingPayment
-                                ? null
-                                : () => createPayment(_selectedAmount),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colours.white,
-                          foregroundColor: Colours.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14.r),
-                          ),
-                        ),
-                        child:
-                            _isProcessingPayment
-                                ? SizedBox(
-                                  height: 20.h,
-                                  width: 20.h,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colours.primary,
-                                    ),
-                                  ),
-                                )
-                                : Text(
-                                  "Continue To Payment",
-                                  style: TextStyle(
-                                    fontFamily: Fonts.semiBold,
-                                    fontSize: 14.sp,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                      ),
+                    _PaymentButton(
+                      isLoading: _isProcessingPayment,
+                      onPressed: _startPayment,
                     ),
                     verticalSpace(12),
                     Center(
                       child: Text(
-                        "Selected plan: $_selectedPlanTitle",
+                        "Selected plan: ${_selectedPlan.title}",
                         style: TextStyle(
                           fontFamily: Fonts.light,
                           fontSize: 11.sp,
@@ -333,12 +210,180 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
     );
   }
 
-  Widget _buildHeroCard() {
+  Future<void> _showPaymentFailedDialog(PaymentFailureResponse response) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder:
+          (dialogContext) => _PaymentDialog(
+            icon: Icons.close_rounded,
+            iconBackground: const Color(0xFF3B1212),
+            iconColor: const Color(0xFFFF7D7D),
+            title: "Payment Failed",
+            message:
+                response.message?.isNotEmpty == true
+                    ? response.message!
+                    : "We could not complete your ${_selectedPlan.title} plan purchase. You can retry the payment or choose another method.",
+            primaryLabel: "Retry",
+            onPrimary: () {
+              Navigator.pop(dialogContext);
+              _startPayment();
+            },
+            secondaryLabel: "Cancel",
+            onSecondary: () => Navigator.pop(dialogContext),
+          ),
+    );
+  }
+
+  Future<void> _showGenericFailureDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder:
+          (dialogContext) => _PaymentDialog(
+            icon: Icons.priority_high_rounded,
+            iconBackground: Colours.divider,
+            iconColor: Colours.white,
+            title: "Unable To Start Payment",
+            message:
+                "Something went wrong while opening the payment sheet. Please try again.",
+            primaryLabel: "Okay",
+            onPrimary: () => Navigator.pop(dialogContext),
+          ),
+    );
+  }
+
+  Future<void> _showSuccessDialog(String? paymentId) async {
+    _successController
+      ..reset()
+      ..forward();
+
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: "payment_success",
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder:
+          (_, __, ___) => _SuccessDialog(
+            scale: _successScale,
+            planTitle: _selectedPlan.title,
+            paymentId: paymentId,
+          ),
+      transitionBuilder:
+          (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
+    );
+
+    await Future.delayed(const Duration(milliseconds: 1800));
+    if (!mounted) return;
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.pop(context, true);
+    }
+  }
+
+  Future<void> _showExternalWalletSheet(String? walletName) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF121212),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+      ),
+      builder:
+          (sheetContext) => _ExternalWalletSheet(
+            walletName: walletName,
+            onRetry: () {
+              Navigator.pop(sheetContext);
+              _startPayment();
+            },
+          ),
+    );
+  }
+}
+
+class _VerifiedPlan {
+  final String title;
+  final String price;
+  final String period;
+  final int amount;
+  final String description;
+  final bool isRecommended;
+
+  const _VerifiedPlan({
+    required this.title,
+    required this.price,
+    required this.period,
+    required this.amount,
+    required this.description,
+    this.isRecommended = false,
+  });
+}
+
+class _VerifiedFeature {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _VerifiedFeature({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+}
+
+class _TopBar extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _TopBar({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: "Back",
+            onPressed: onBack,
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: Colours.white,
+              size: 18.sp,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            "Verified",
+            style: TextStyle(
+              fontFamily: Fonts.bold,
+              fontSize: 18.sp,
+              letterSpacing: 1.2,
+              color: Colours.white,
+            ),
+          ),
+          const Spacer(),
+          SizedBox(width: 48.w),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(22.w),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24.r),
+        borderRadius: BorderRadius.circular(20.r),
         gradient: const LinearGradient(
           colors: [Color(0xFF0F172A), Color(0xFF123C8C), Color(0xFF1E88E5)],
           begin: Alignment.topLeft,
@@ -384,18 +429,38 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
       ),
     );
   }
+}
 
-  Widget _buildFeatureTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
+class _SectionTitle extends StatelessWidget {
+  final String title;
+
+  const _SectionTitle(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontFamily: Fonts.semiBold,
+        fontSize: 16.sp,
+        color: Colours.white,
+      ),
+    );
+  }
+}
+
+class _FeatureTile extends StatelessWidget {
+  final _VerifiedFeature feature;
+
+  const _FeatureTile({required this.feature});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colours.divider,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(14.r),
         border: Border.all(color: Colours.white.withValues(alpha: 0.06)),
       ),
       child: Row(
@@ -406,9 +471,9 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
             width: 40.h,
             decoration: BoxDecoration(
               color: Colours.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Icon(icon, color: Colours.white, size: 20.sp),
+            child: Icon(feature.icon, color: Colours.white, size: 20.sp),
           ),
           SizedBox(width: 14.w),
           Expanded(
@@ -416,7 +481,7 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  feature.title,
                   style: TextStyle(
                     fontFamily: Fonts.medium,
                     fontSize: 14.sp,
@@ -425,7 +490,7 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  subtitle,
+                  feature.subtitle,
                   style: TextStyle(
                     fontFamily: Fonts.light,
                     fontSize: 12.sp,
@@ -440,132 +505,432 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
       ),
     );
   }
+}
 
-  Widget _buildPlanCard({
-    required String title,
-    required String price,
-    required String period,
-    required String description,
-    required bool isRecommended,
-    required int amount,
-  }) {
-    final isSelected = _selectedAmount == amount;
+class _PlanCard extends StatelessWidget {
+  final _VerifiedPlan plan;
+  final bool isSelected;
+  final bool isEnabled;
+  final VoidCallback onTap;
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedAmount = amount;
-          _selectedPlanTitle = title;
-        });
-      },
-      borderRadius: BorderRadius.circular(20.r),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(18.w),
-        decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? const Color(0xFF101D36)
-                  : isRecommended
-                  ? const Color(0xFF101D36)
-                  : Colours.divider,
-          borderRadius: BorderRadius.circular(20.r),
-          border: Border.all(
+  const _PlanCard({
+    required this.plan,
+    required this.isSelected,
+    required this.isEnabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        isSelected
+            ? const Color(0xFF8AC4FF)
+            : plan.isRecommended
+            ? const Color(0xFF4DA3FF)
+            : Colours.white.withValues(alpha: 0.12);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEnabled ? onTap : null,
+        borderRadius: BorderRadius.circular(16.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: double.infinity,
+          padding: EdgeInsets.all(18.w),
+          decoration: BoxDecoration(
             color:
-                isSelected
-                    ? const Color(0xFF8AC4FF)
-                    : isRecommended
-                    ? const Color(0xFF4DA3FF)
-                    : Colours.white.withValues(alpha: 0.12),
-            width: isSelected || isRecommended ? 1.1 : 0.8,
+                isSelected || plan.isRecommended
+                    ? const Color(0xFF101D36)
+                    : Colours.divider,
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: borderColor,
+              width: isSelected || plan.isRecommended ? 1.1 : 0.8,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (isRecommended)
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 10.w,
+                runSpacing: 8.h,
+                children: [
+                  if (plan.isRecommended)
+                    const _PlanBadge(
+                      label: "Best Value",
+                      background: Color(0xFF4DA3FF),
+                      foreground: Colours.primary,
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4DA3FF),
-                      borderRadius: BorderRadius.circular(30.r),
+                  if (isSelected)
+                    _PlanBadge(
+                      label: "Selected",
+                      background: Colours.white.withValues(alpha: 0.12),
+                      foreground: Colours.white,
                     ),
-                    child: Text(
-                      "Best Value",
+                ],
+              ),
+              if (plan.isRecommended || isSelected) SizedBox(height: 14.h),
+              Text(
+                plan.title,
+                style: TextStyle(
+                  fontFamily: Fonts.semiBold,
+                  fontSize: 16.sp,
+                  color: Colours.white,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: plan.price,
                       style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 11.sp,
-                        color: Colours.primary,
-                      ),
-                    ),
-                  ),
-                if (isRecommended && isSelected) SizedBox(width: 10.w),
-                if (isSelected)
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colours.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(30.r),
-                    ),
-                    child: Text(
-                      "Selected",
-                      style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 11.sp,
+                        fontFamily: Fonts.bold,
+                        fontSize: 26.sp,
                         color: Colours.white,
                       ),
                     ),
-                  ),
-              ],
-            ),
-            if (isRecommended || isSelected) SizedBox(height: 14.h),
-            Text(
-              title,
-              style: TextStyle(
-                fontFamily: Fonts.semiBold,
-                fontSize: 16.sp,
-                color: Colours.white,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: price,
-                    style: TextStyle(
-                      fontFamily: Fonts.bold,
-                      fontSize: 26.sp,
-                      color: Colours.white,
+                    TextSpan(
+                      text: plan.period,
+                      style: TextStyle(
+                        fontFamily: Fonts.light,
+                        fontSize: 13.sp,
+                        color: Colours.white.withValues(alpha: 0.7),
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: period,
-                    style: TextStyle(
-                      fontFamily: Fonts.light,
-                      fontSize: 13.sp,
-                      color: Colours.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              SizedBox(height: 10.h),
+              Text(
+                plan.description,
+                style: TextStyle(
+                  fontFamily: Fonts.light,
+                  fontSize: 12.sp,
+                  height: 1.5,
+                  color: Colours.white.withValues(alpha: 0.72),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanBadge extends StatelessWidget {
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  const _PlanBadge({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(30.r),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: Fonts.semiBold,
+          fontSize: 11.sp,
+          color: foreground,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _InfoCard({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colours.divider,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: Colours.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontFamily: Fonts.semiBold,
+              fontSize: 14.sp,
+              color: Colours.white,
             ),
-            SizedBox(height: 10.h),
-            Text(
-              description,
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            body,
+            style: TextStyle(
+              fontFamily: Fonts.light,
+              fontSize: 12.sp,
+              height: 1.6,
+              color: Colours.white.withValues(alpha: 0.72),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WalletNote extends StatelessWidget {
+  const _WalletNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101D36),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: Colours.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.account_balance_wallet_outlined,
+            color: const Color(0xFF8AC4FF),
+            size: 20.sp,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              "External wallets like Paytm are supported and handled through Razorpay callbacks.",
               style: TextStyle(
                 fontFamily: Fonts.light,
                 fontSize: 12.sp,
                 height: 1.5,
-                color: Colours.white.withValues(alpha: 0.72),
+                color: Colours.white.withValues(alpha: 0.74),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const _PaymentButton({required this.isLoading, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52.h,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colours.white,
+          foregroundColor: Colours.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+        ),
+        child:
+            isLoading
+                ? SizedBox(
+                  height: 20.h,
+                  width: 20.h,
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colours.primary,
+                  ),
+                )
+                : Text(
+                  "Continue To Payment",
+                  style: TextStyle(
+                    fontFamily: Fonts.semiBold,
+                    fontSize: 14.sp,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+      ),
+    );
+  }
+}
+
+class _PaymentDialog extends StatelessWidget {
+  final IconData icon;
+  final Color iconBackground;
+  final Color iconColor;
+  final String title;
+  final String message;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+
+  const _PaymentDialog({
+    required this.icon,
+    required this.iconBackground,
+    required this.iconColor,
+    required this.title,
+    required this.message,
+    required this.primaryLabel,
+    required this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF151515),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+      title: Row(
+        children: [
+          Container(
+            height: 38.h,
+            width: 38.h,
+            decoration: BoxDecoration(
+              color: iconBackground,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontFamily: Fonts.bold,
+                fontSize: 18.sp,
+                color: Colours.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        message,
+        style: TextStyle(
+          fontFamily: Fonts.light,
+          fontSize: 13.sp,
+          height: 1.6,
+          color: Colours.white.withValues(alpha: 0.75),
+        ),
+      ),
+      actions: [
+        if (secondaryLabel != null && onSecondary != null)
+          TextButton(
+            onPressed: onSecondary,
+            child: Text(
+              secondaryLabel!,
+              style: TextStyle(
+                fontFamily: Fonts.medium,
+                color: Colours.white.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ElevatedButton(
+          onPressed: onPrimary,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colours.white,
+            foregroundColor: Colours.primary,
+          ),
+          child: Text(
+            primaryLabel,
+            style: TextStyle(fontFamily: Fonts.semiBold),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuccessDialog extends StatelessWidget {
+  final Animation<double> scale;
+  final String planTitle;
+  final String? paymentId;
+
+  const _SuccessDialog({
+    required this.scale,
+    required this.planTitle,
+    required this.paymentId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 28.w),
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101717),
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(
+            color: const Color(0xFF39D98A).withValues(alpha: 0.35),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ScaleTransition(
+              scale: scale,
+              child: Container(
+                height: 84.h,
+                width: 84.h,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF39D98A).withValues(alpha: 0.18),
+                  border: Border.all(
+                    color: const Color(0xFF39D98A).withValues(alpha: 0.45),
+                  ),
+                ),
+                child: Icon(
+                  Icons.check_rounded,
+                  size: 46.sp,
+                  color: const Color(0xFF8EF0BC),
+                ),
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              "Verification Activated",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: Fonts.bold,
+                fontSize: 20.sp,
+                color: Colours.white,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              paymentId == null || paymentId!.isEmpty
+                  ? "Your $planTitle plan payment was successful."
+                  : "Payment successful.\nReference: $paymentId",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: Fonts.light,
+                fontSize: 13.sp,
+                height: 1.6,
+                color: Colours.white.withValues(alpha: 0.75),
               ),
             ),
           ],
@@ -573,347 +938,121 @@ class _VerifiedSubscriptionScreenState extends State<VerifiedSubscriptionScreen>
       ),
     );
   }
+}
 
-  Future<void> _showPaymentFailedDialog(PaymentFailureResponse response) async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder:
-          (dialogContext) => AlertDialog(
-            backgroundColor: const Color(0xFF151515),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22.r),
+class _ExternalWalletSheet extends StatelessWidget {
+  final String? walletName;
+  final VoidCallback onRetry;
+
+  const _ExternalWalletSheet({required this.walletName, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(22.w, 16.h, 22.w, 28.h),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              height: 4.h,
+              width: 46.w,
+              decoration: BoxDecoration(
+                color: Colours.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
             ),
-            title: Row(
-              children: [
-                Container(
-                  height: 38.h,
-                  width: 38.h,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF3B1212),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.close_rounded,
-                    color: const Color(0xFFFF7D7D),
-                    size: 22.sp,
+          ),
+          SizedBox(height: 22.h),
+          Row(
+            children: [
+              Container(
+                height: 44.h,
+                width: 44.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF17304F),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: const Color(0xFF8AC4FF),
+                  size: 22.sp,
+                ),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Text(
+                  "Complete payment in ${walletName ?? 'your wallet'}",
+                  style: TextStyle(
+                    fontFamily: Fonts.bold,
+                    fontSize: 17.sp,
+                    color: Colours.white,
                   ),
                 ),
-                SizedBox(width: 12.w),
-                Expanded(
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Text(
+            "Finish the payment there, then return to ProSnap. Razorpay will trigger success or failure automatically when the flow completes.",
+            style: TextStyle(
+              fontFamily: Fonts.light,
+              fontSize: 13.sp,
+              height: 1.6,
+              color: Colours.white.withValues(alpha: 0.75),
+            ),
+          ),
+          SizedBox(height: 18.h),
+          const _InfoCard(
+            title: "Safe to retry",
+            body:
+                "If the wallet app was closed or payment was not completed, you can come back here and retry safely.",
+          ),
+          SizedBox(height: 18.h),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: Colours.white.withValues(alpha: 0.16),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
                   child: Text(
-                    "Payment Failed",
+                    "Close",
                     style: TextStyle(
-                      fontFamily: Fonts.bold,
-                      fontSize: 18.sp,
+                      fontFamily: Fonts.medium,
                       color: Colours.white,
                     ),
                   ),
                 ),
-              ],
-            ),
-            content: Text(
-              response.message?.isNotEmpty == true
-                  ? response.message!
-                  : "We could not complete your $_selectedPlanTitle plan purchase. You can retry the payment or choose another method.",
-              style: TextStyle(
-                fontFamily: Fonts.light,
-                fontSize: 13.sp,
-                height: 1.6,
-                color: Colours.white.withValues(alpha: 0.75),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(
-                  "Cancel",
-                  style: TextStyle(
-                    fontFamily: Fonts.medium,
-                    color: Colours.white.withValues(alpha: 0.7),
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  createPayment(_selectedAmount);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colours.white,
-                  foregroundColor: Colours.primary,
-                ),
-                child: Text(
-                  "Retry",
-                  style: TextStyle(fontFamily: Fonts.semiBold),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> _showGenericFailureDialog() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder:
-          (dialogContext) => AlertDialog(
-            backgroundColor: const Color(0xFF151515),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22.r),
-            ),
-            title: Text(
-              "Unable To Start Payment",
-              style: TextStyle(
-                fontFamily: Fonts.bold,
-                fontSize: 18.sp,
-                color: Colours.white,
-              ),
-            ),
-            content: Text(
-              "Something went wrong while opening the payment sheet. Please try again.",
-              style: TextStyle(
-                fontFamily: Fonts.light,
-                fontSize: 13.sp,
-                height: 1.6,
-                color: Colours.white.withValues(alpha: 0.75),
-              ),
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colours.white,
-                  foregroundColor: Colours.primary,
-                ),
-                child: Text(
-                  "Okay",
-                  style: TextStyle(fontFamily: Fonts.semiBold),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> _showSuccessDialog(String? paymentId) async {
-    _successAnimationController
-      ..reset()
-      ..forward();
-
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: "payment_success",
-      barrierColor: Colors.black.withValues(alpha: 0.72),
-      transitionDuration: const Duration(milliseconds: 250),
-      pageBuilder: (_, __, ___) {
-        return Center(
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 28.w),
-            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFF101717),
-              borderRadius: BorderRadius.circular(28.r),
-              border: Border.all(
-                color: const Color(0xFF39D98A).withValues(alpha: 0.35),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ScaleTransition(
-                  scale: _successScaleAnimation,
-                  child: Container(
-                    height: 84.h,
-                    width: 84.h,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF39D98A).withValues(alpha: 0.18),
-                      border: Border.all(
-                        color: const Color(0xFF39D98A).withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.check_rounded,
-                      size: 46.sp,
-                      color: const Color(0xFF8EF0BC),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20.h),
-                Text(
-                  "Verification Activated",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: Fonts.bold,
-                    fontSize: 20.sp,
-                    color: Colours.white,
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                Text(
-                  paymentId == null || paymentId.isEmpty
-                      ? "Your $_selectedPlanTitle plan payment was successful."
-                      : "Payment successful.\nReference: $paymentId",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: Fonts.light,
-                    fontSize: 13.sp,
-                    height: 1.6,
-                    color: Colours.white.withValues(alpha: 0.75),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      transitionBuilder: (_, animation, __, child) {
-        return FadeTransition(opacity: animation, child: child);
-      },
-    );
-
-    await Future.delayed(const Duration(milliseconds: 1800));
-    if (!mounted) return;
-
-    Navigator.of(context, rootNavigator: true).pop();
-    Navigator.pop(context, true);
-  }
-
-  Future<void> _showExternalWalletSheet(String? walletName) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF121212),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-      ),
-      builder:
-          (sheetContext) => Padding(
-            padding: EdgeInsets.fromLTRB(22.w, 16.h, 22.w, 28.h),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    height: 4.h,
-                    width: 46.w,
-                    decoration: BoxDecoration(
-                      color: Colours.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(20.r),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 22.h),
-                Row(
-                  children: [
-                    Container(
-                      height: 44.h,
-                      width: 44.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF17304F),
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                      child: Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: const Color(0xFF8AC4FF),
-                        size: 22.sp,
-                      ),
-                    ),
-                    SizedBox(width: 14.w),
-                    Expanded(
-                      child: Text(
-                        "Complete payment in ${walletName ?? 'your wallet'}",
-                        style: TextStyle(
-                          fontFamily: Fonts.bold,
-                          fontSize: 17.sp,
-                          color: Colours.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 14.h),
-                Text(
-                  "An external wallet was selected. Finish the payment there, then return to ProSnap. Razorpay will trigger success or failure automatically when the flow completes.",
-                  style: TextStyle(
-                    fontFamily: Fonts.light,
-                    fontSize: 13.sp,
-                    height: 1.6,
-                    color: Colours.white.withValues(alpha: 0.75),
-                  ),
-                ),
-                SizedBox(height: 18.h),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(14.w),
-                  decoration: BoxDecoration(
-                    color: Colours.divider,
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: Colours.white.withValues(alpha: 0.08),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onRetry,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colours.white,
+                    foregroundColor: Colours.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
                   child: Text(
-                    "If the wallet app was closed or payment was not completed, you can come back here and retry safely.",
-                    style: TextStyle(
-                      fontFamily: Fonts.light,
-                      fontSize: 12.sp,
-                      height: 1.6,
-                      color: Colours.white.withValues(alpha: 0.7),
-                    ),
+                    "Retry",
+                    style: TextStyle(fontFamily: Fonts.semiBold),
                   ),
                 ),
-                SizedBox(height: 18.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(sheetContext),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colours.white.withValues(alpha: 0.16),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14.r),
-                          ),
-                        ),
-                        child: Text(
-                          "Close",
-                          style: TextStyle(
-                            fontFamily: Fonts.medium,
-                            color: Colours.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(sheetContext);
-                          createPayment(_selectedAmount);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colours.white,
-                          foregroundColor: Colours.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14.r),
-                          ),
-                        ),
-                        child: Text(
-                          "Retry",
-                          style: TextStyle(fontFamily: Fonts.semiBold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ],
+      ),
     );
   }
 }

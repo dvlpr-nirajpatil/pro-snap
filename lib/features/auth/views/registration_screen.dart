@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
 import 'package:prosnap/core/router/routes.dart';
@@ -22,9 +25,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final TextEditingController fullName = TextEditingController();
   final TextEditingController bio = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey();
+  final ImagePicker imagePicker = ImagePicker();
 
   String? selectedGender;
   DateTime? selectedDate;
+  XFile? selectedProfileImage;
 
   get birthDate {
     String day = selectedDate!.day.toString().padLeft(2, "0");
@@ -42,6 +47,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       backgroundColor: Colours.primary,
       body: SafeArea(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.symmetric(horizontal: 28.w),
           child: Form(
             key: formKey,
@@ -69,7 +75,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     fontFamily: Fonts.light,
                     fontSize: 14.sp,
                     letterSpacing: 1.5,
-                    color: Colours.white.withOpacity(0.7),
+                    color: Colours.white.withValues(alpha: 0.7),
                   ),
                 ),
 
@@ -77,22 +83,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 /// Profile Image
                 GestureDetector(
-                  onTap: () {
-                    // open image picker
-                  },
-                  child: Container(
-                    height: 110.h,
-                    width: 110.h,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colours.white, width: 1),
-                    ),
-                    child: Icon(
-                      Icons.add_a_photo_outlined,
-                      color: Colours.white.withOpacity(0.7),
-                      size: 28.sp,
-                    ),
-                  ),
+                  onTap: _pickProfileImage,
+                  child: _buildProfileImagePicker(),
                 ),
 
                 verticalSpace(40),
@@ -114,7 +106,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 _buildGenderDropdown(),
                 verticalSpace(18),
 
-                _buildInputField("DOB", controller: dob, isRequired: true),
+                _buildDobField(context),
                 verticalSpace(18),
 
                 _buildBioField(bio),
@@ -133,9 +125,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                       .saveUserDetails(
                                         name: fullName.text,
                                         userName: userName.text,
-                                        gender: selectedGender ?? "",
+                                        gender:
+                                            selectedGender?.toLowerCase() ?? "",
                                         dob: dob.text,
                                         bio: bio.text,
+                                        profileImagePath:
+                                            selectedProfileImage?.path,
                                       )
                                       .then((e) {
                                         if (e) {
@@ -158,6 +153,78 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  @override
+  void dispose() {
+    userName.dispose();
+    dob.dispose();
+    fullName.dispose();
+    bio.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickProfileImage() async {
+    final image = await imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (image != null) {
+      setState(() {
+        selectedProfileImage = image;
+      });
+    }
+  }
+
+  Widget _buildProfileImagePicker() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          height: 110.h,
+          width: 110.h,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colours.white, width: 1),
+            image:
+                selectedProfileImage == null
+                    ? null
+                    : DecorationImage(
+                      image: FileImage(File(selectedProfileImage!.path)),
+                      fit: BoxFit.cover,
+                    ),
+          ),
+          child:
+              selectedProfileImage == null
+                  ? Icon(
+                    Icons.add_a_photo_outlined,
+                    color: Colours.white.withValues(alpha: 0.7),
+                    size: 28.sp,
+                  )
+                  : null,
+        ),
+        Positioned(
+          right: 0,
+          bottom: 4.h,
+          child: Container(
+            height: 30.h,
+            width: 30.h,
+            decoration: const BoxDecoration(
+              color: Colours.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              selectedProfileImage == null
+                  ? Icons.add_rounded
+                  : Icons.edit_rounded,
+              color: Colours.primary,
+              size: 18.sp,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -201,7 +268,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Widget _buildGenderDropdown() {
     return DropdownButtonFormField<String>(
       dropdownColor: Colours.primary,
-      value: selectedGender,
+      initialValue: selectedGender,
       style: TextStyle(fontFamily: Fonts.medium, color: Colours.white),
       decoration: _inputDecoration("Gender"),
       items:
@@ -245,21 +312,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         if (picked != null) {
           setState(() {
             selectedDate = picked;
+            dob.text = birthDate;
           });
         }
       },
       child: AbsorbPointer(
         child: TextFormField(
+          controller: dob,
+          validator: (value) {
+            if (value == null || value == "") {
+              return "Required !";
+            }
+            return null;
+          },
           style: TextStyle(
             fontFamily: Fonts.medium,
             fontSize: 14.sp,
             color: Colours.white,
           ),
-          decoration: _inputDecoration(
-            selectedDate == null
-                ? "Date of Birth"
-                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-          ),
+          cursorColor: Colours.white,
+          decoration: _inputDecoration("DOB"),
         ),
       ),
     );

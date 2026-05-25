@@ -7,7 +7,8 @@ class SocketService extends GetxService {
 
   bool isConnected = false;
 
-  final String baseUrl = "https://inordinately-serous-maryann.ngrok-free.dev";
+  final String baseUrl =
+      "https://alysha-unlanterned-ingrainedly.ngrok-free.dev";
 
   void connect(token) {
     socket = IO.io(

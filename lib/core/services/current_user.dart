@@ -27,7 +27,10 @@ class CurrentUser {
 
   bool get registration => _details['registration'] ?? false;
   String get name => _details['name'] ?? "";
+  String get userName => _details['userName'] ?? "";
   String get bio => _details['bio'] ?? "";
   String get id => _details['_id'] ?? "";
   String get email => _details['email'] ?? "test@gmail.com";
+  String get profilePicture => _details['profilePicture'] ?? "";
+  bool get isVerified => _details['isVerified'] ?? false;
 }

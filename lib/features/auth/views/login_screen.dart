@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:prosnap/core/consts/colours.dart';
 import 'package:prosnap/core/consts/fonts.dart';
 import 'package:prosnap/features/auth/controllers/auth_controller.dart';
@@ -20,114 +19,124 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colours.primary,
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 28.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              verticalSpace(100),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.symmetric(horizontal: 28.w),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      verticalSpace(100),
 
-              /// Logo
-              Text(
-                "PRO SNAP",
-                style: TextStyle(
-                  fontFamily: Fonts.bold,
-                  fontSize: 32.sp,
-                  letterSpacing: 6,
-                  color: Colours.white,
-                ),
-              ),
-
-              verticalSpace(12),
-
-              /// Subtitle
-              Text(
-                "Welcome Back",
-                style: TextStyle(
-                  fontFamily: Fonts.light,
-                  fontSize: 14.sp,
-                  letterSpacing: 1.5,
-                  color: Colours.white.withOpacity(0.7),
-                ),
-              ),
-
-              verticalSpace(60),
-
-              /// Email Field
-              _buildInputField(
-                hint: "Email",
-                obscure: false,
-                controller: email,
-              ),
-
-              verticalSpace(20),
-
-              /// Password Field
-              _buildInputField(
-                hint: "Password",
-                obscure: true,
-                controller: password,
-              ),
-
-              verticalSpace(40),
-
-              /// Login Button
-              SizedBox(
-                width: double.infinity,
-                child: Obx(() {
-                  final controller = Get.find<AuthController>();
-                  return ElevatedButton(
-                    onPressed:
-                        controller.signUpLoading.value
-                            ? null
-                            : () {
-                              controller.signIn(
-                                email: email.text,
-                                password: password.text,
-                              );
-                            },
-                    child:
-                        controller.signUpLoading.value
-                            ? ButtonLoader()
-                            : Text("LOGIN"),
-                  );
-                }),
-              ),
-
-              const Spacer(),
-
-              /// Create Account
-              Column(
-                children: [
-                  Text(
-                    "Don't have an account?",
-                    style: TextStyle(
-                      fontFamily: Fonts.light,
-                      fontSize: 13.sp,
-                      color: Colours.grey,
-                    ),
-                  ),
-                  verticalSpace(8),
-                  GestureDetector(
-                    onTap: () {
-                      Get.to(() => SignupScreen());
-                    },
-                    child: Text(
-                      "Create Account",
-                      style: TextStyle(
-                        fontFamily: Fonts.semiBold,
-                        fontSize: 14.sp,
-                        letterSpacing: 1.2,
-                        color: Colours.white,
+                      /// Logo
+                      Text(
+                        "PRO SNAP",
+                        style: TextStyle(
+                          fontFamily: Fonts.bold,
+                          fontSize: 32.sp,
+                          letterSpacing: 6,
+                          color: Colours.white,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
 
-              verticalSpace(30),
-            ],
-          ),
+                      verticalSpace(12),
+
+                      /// Subtitle
+                      Text(
+                        "Welcome Back",
+                        style: TextStyle(
+                          fontFamily: Fonts.light,
+                          fontSize: 14.sp,
+                          letterSpacing: 1.5,
+                          color: Colours.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+
+                      verticalSpace(60),
+
+                      /// Email Field
+                      _buildInputField(
+                        hint: "Email",
+                        obscure: false,
+                        controller: email,
+                      ),
+
+                      verticalSpace(20),
+
+                      /// Password Field
+                      _buildInputField(
+                        hint: "Password",
+                        obscure: true,
+                        controller: password,
+                      ),
+
+                      verticalSpace(40),
+
+                      /// Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: Obx(() {
+                          final controller = Get.find<AuthController>();
+                          return ElevatedButton(
+                            onPressed:
+                                controller.signUpLoading.value
+                                    ? null
+                                    : () {
+                                      controller.signIn(
+                                        email: email.text,
+                                        password: password.text,
+                                      );
+                                    },
+                            child:
+                                controller.signUpLoading.value
+                                    ? ButtonLoader()
+                                    : Text("LOGIN"),
+                          );
+                        }),
+                      ),
+
+                      const Spacer(),
+
+                      /// Create Account
+                      Column(
+                        children: [
+                          Text(
+                            "Don't have an account?",
+                            style: TextStyle(
+                              fontFamily: Fonts.light,
+                              fontSize: 13.sp,
+                              color: Colours.grey,
+                            ),
+                          ),
+                          verticalSpace(8),
+                          GestureDetector(
+                            onTap: () {
+                              Get.to(() => SignupScreen());
+                            },
+                            child: Text(
+                              "Create Account",
+                              style: TextStyle(
+                                fontFamily: Fonts.semiBold,
+                                fontSize: 14.sp,
+                                letterSpacing: 1.2,
+                                color: Colours.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      verticalSpace(30),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

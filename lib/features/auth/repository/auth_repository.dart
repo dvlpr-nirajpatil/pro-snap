@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:get/instance_manager.dart';
-import 'package:prosnap/core/global/globals.dart';
 import 'package:prosnap/core/network/api_client.dart';
 import 'package:prosnap/core/services/current_user.dart';
 import 'package:prosnap/core/services/notification_service.dart';
@@ -107,12 +106,30 @@ class AuthRepository {
     }
   }
 
+  uploadSingleImage(String path) async {
+    try {
+      final formData = FormData();
+      formData.files.add(MapEntry("image", await MultipartFile.fromFile(path)));
+
+      final Response response = await apiClient.dio.post(
+        "/upload/single",
+        data: formData,
+        options: Options(contentType: "multipart/form-data"),
+      );
+
+      return response.data['data']['url'];
+    } on DioException catch (e) {
+      throw e.error as Exception;
+    }
+  }
+
   saveUserDetails({
     required String name,
     required String userName,
     required String gender,
     required String dob,
     required String bio,
+    required String profilePicture,
   }) async {
     try {
       final payload = {
@@ -121,7 +138,7 @@ class AuthRepository {
         "bio": bio,
         "gender": gender,
         "dob": dob,
-        "profilePicture": "",
+        "profilePicture": profilePicture,
       };
 
       final Response response = await apiClient.dio.patch(
